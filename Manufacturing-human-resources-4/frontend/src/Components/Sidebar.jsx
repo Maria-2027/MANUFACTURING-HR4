@@ -6,11 +6,8 @@ import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import {
   IoFileTrayOutline,
   IoChatboxOutline,
-  IoDocumentTextOutline,  
+  IoDocumentTextOutline,
 } from "react-icons/io5";
-import { RiFilePaper2Line } from "react-icons/ri";
-import { FiBox } from "react-icons/fi";
-import { FaWpforms } from "react-icons/fa";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -47,12 +44,10 @@ const Sidebar = () => {
       aria-label="Sidebar"
     >
       {/* Toggle Button */}
-      <div className="flex justify-e">
+      <div className="flex justify-end">
         <button
           onClick={toggleSidebar}
-          className={`mb-4 p-1 text-black border border-gray-300 rounded-md hover:bg-gray-200 transition duration-200  ${
-            isCollapsed ? "w-11" : "w-11 "
-          }`}
+          className="mb-4 p-1 text-black border border-gray-300 rounded-md hover:bg-gray-200 transition duration-200 w-11"
           aria-expanded={!isCollapsed}
           aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
@@ -110,7 +105,6 @@ const Sidebar = () => {
             "Tracking",
             "Case Management",
             "Investigation & Solution",
-            "Feedback & Satisfaction",
             "Feedback & Satisfaction",
           ].map((item) => (
             <li key={item}>

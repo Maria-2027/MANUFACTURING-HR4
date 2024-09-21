@@ -111,6 +111,7 @@ const Sidebar = () => {
             "Case Management",
             "Investigation & Solution",
             "Feedback & Satisfaction",
+            "Feedback & Satisfaction",
           ].map((item) => (
             <li key={item}>
               <a

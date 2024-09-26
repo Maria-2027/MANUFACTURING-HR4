@@ -1,30 +1,25 @@
-import User from "../models/userModel.js";
+import User from '../models/userModel.js'; // Make sure to include the .js extension
+import asyncHandler from 'express-async-handler';
+import jwt from 'jsonwebtoken';
 
-const getUser = async (req, res) => {
-  try {
-    const users = await User.find({});
+// @desc    Auth user & get token
+// @route   POST /api/users/login
+// @access  Public
+const authUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-    res.status(200).json({ success: true, data: users });
-  } catch (error) {
-    console.log("Error");
-    throw new Error(error.message);
-  }
-};
+    const user = await User.findOne({ email });
 
-const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+    if (user && (await user.matchPassword(password))) {
+        res.json({
+            _id: user._id,
+            email: user.email,
+            token: jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' }),
+        });
+    } else {
+        res.status(401);
+        throw new Error('Invalid email or password');
+    }
+});
 
-  const newUser = new User({
-    name: name,
-    email: email,
-    password: password,
-  });
-
-  const getUser = await newUser.save();
-
-  const user = await User.findById(getUser);
-
-  res.status(201).json({ success: true, data: user });
-};
-
-export { getUser, registerUser };
+export { authUser }; // Use named export

@@ -1,25 +1,22 @@
-import express from 'express'
-import cors from "cors";
-import "dotenv/config";
-import { ConnectDB } from './config/db.js';
+import express from 'express';
+import dotenv from 'dotenv'; 
+import cors from 'cors';
+import connectDB from './config/db.js'; // Make sure to include the .js extension
+import UserRouter from './routes/userRoute.js';
 
-const port = process.env.PORT || 4000;
+dotenv.config();
+connectDB();
+
+const PORT = process.env.PORT || 4000;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-ConnectDB();
+app.use('/api/users', UserRouter);
 
-app.get("/", (req,res) => {
-  res.send("Hello world ")
-})
+app.get("/", (req, res) => {
+    res.send("Hello world ");
+  });
 
-// Your endpoints
-
-// end
-
-
-app.listen(port, () => {
-  console.log(`Server Started on http://localhost:${port}`);
-})
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

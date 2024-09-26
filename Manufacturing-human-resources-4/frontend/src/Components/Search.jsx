@@ -2,6 +2,7 @@ import React from "react";
 import { RiMenuFold2Fill } from "react-icons/ri";
 import { MdOutlineDarkMode } from "react-icons/md";
 import { IoMdNotificationsOutline } from "react-icons/io";
+import { Link } from "react-router-dom";
 
 const Search = () => {
   return (
@@ -84,15 +85,24 @@ const Search = () => {
             </button>
           </form>
         </div>
-        
 
         {/* Right-side icons and user profile */}
         <div className="flex gap-3 items-center">
           <MdOutlineDarkMode className="size-6 cursor-pointer" />
-          <input type="checkbox" value="synthwave" class="toggle theme-controller" />
+          <input
+            type="checkbox"
+            value="synthwave"
+            class="toggle theme-controller"
+          />
           <IoMdNotificationsOutline className="size-6 cursor-pointer" />
           <div className="dropdown dropdown-end">
-            <img src="https://i.pinimg.com/736x/ea/21/05/ea21052f12b135e2f343b0c5ca8aeabc.jpg" tabIndex={0} role="button" alt="/" className="size-10 rounded-full" />
+            <img
+              src="https://i.pinimg.com/736x/ea/21/05/ea21052f12b135e2f343b0c5ca8aeabc.jpg"
+              tabIndex={0}
+              role="button"
+              alt="/"
+              className="size-10 rounded-full"
+            />
             <ul
               tabIndex={0}
               className="dropdown-content menu bg-white rounded-box z-[1] w-52 p-2 mt-2 shadow"
@@ -104,7 +114,12 @@ const Search = () => {
                 <a>Settings</a>
               </li>
               <li>
-                <a>Log out</a>
+                  <Link
+                    to="/login"
+                 
+                  >
+                      <p className="text-sm font-semibold">Logout</p>
+                  </Link>
               </li>
             </ul>
           </div>

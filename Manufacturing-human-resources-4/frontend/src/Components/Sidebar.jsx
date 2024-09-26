@@ -6,17 +6,21 @@ import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import {
   IoFileTrayOutline,
   IoChatboxOutline,
-  IoDocumentTextOutline,  
+  IoDocumentTextOutline,
 } from "react-icons/io5";
 import { RiFilePaper2Line } from "react-icons/ri";
 import { FiBox } from "react-icons/fi";
 import { FaWpforms } from "react-icons/fa";
+import { Link, useHref } from "react-router-dom"; // Import Link
+import { HiRefresh } from "react-icons/hi";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDropdownOpenGrievance, setIsDropdownOpenGrievance] = useState(false);
-  const [isDropdownOpenEngagement, setIsDropdownOpenEngagement] = useState(false);
-  const [isDropdownOpenCommunication, setIsDropdownOpenCommunication] = useState(false);
+  const [isDropdownOpenEngagement, setIsDropdownOpenEngagement] =
+    useState(false);
+  const [isDropdownOpenCommunication, setIsDropdownOpenCommunication] =
+    useState(false);
   const [isDropdownOpenAnalytics, setIsDropdownOpenAnalytics] = useState(false);
 
   const toggleSidebar = () => {
@@ -88,7 +92,7 @@ const Sidebar = () => {
           aria-label="Grievance Apps"
         >
           <BsBoxSeam className="w-5 h-5" />
-          {!isCollapsed && <span>Grievance</span>}
+          {!isCollapsed && <span>Grievance Management</span>}
           {!isCollapsed && (
             <div className="ml-auto">
               {isDropdownOpenGrievance ? (
@@ -106,12 +110,10 @@ const Sidebar = () => {
           }`}
         >
           {[
-            "Submission",
+            <a href=".pages/LoginForm">Submission</a>,
             "Tracking",
-            "Case Management",
             "Investigation & Solution",
-            "Feedback & Satisfaction",
-            "Feedback & Satisfaction",
+            "Compensation Management (HR3)",
           ].map((item) => (
             <li key={item}>
               <a
@@ -126,16 +128,16 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      {/* Employee Engagement Section */}
+      {/* OpenEngagement */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
           onClick={toggleDropdownEngagement}
           aria-expanded={isDropdownOpenEngagement}
           aria-controls="engagement-dropdown"
-          aria-label="Employee Engagement Apps"
+          aria-label="Engagement Apps"
         >
-          <IoFileTrayOutline className="w-5 h-5" />
+          <BsBoxSeam className="w-5 h-5" />
           {!isCollapsed && <span>Employee Engagement</span>}
           {!isCollapsed && (
             <div className="ml-auto">
@@ -153,7 +155,13 @@ const Sidebar = () => {
             isDropdownOpenEngagement ? "max-h-screen" : "max-h-0"
           }`}
         >
-          {["Surveys", "Recognition", "Events"].map((item) => (
+          {[
+            "Submission",
+            "Payable (Finance)",
+            "Case Management",
+            "Investigation & Solution",
+            "Feedback & Satisfaction",
+          ].map((item) => (
             <li key={item}>
               <a
                 className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
@@ -167,16 +175,16 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      {/* Employee Communication Section */}
+      {/* OpenCommunication */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
           onClick={toggleDropdownCommunication}
           aria-expanded={isDropdownOpenCommunication}
           aria-controls="communication-dropdown"
-          aria-label="Employee Communication Apps"
+          aria-label="Communication Apps"
         >
-          <IoChatboxOutline className="w-5 h-5" />
+          <BsBoxSeam className="w-5 h-5" />
           {!isCollapsed && <span>Employee Communication</span>}
           {!isCollapsed && (
             <div className="ml-auto">
@@ -194,30 +202,45 @@ const Sidebar = () => {
             isDropdownOpenCommunication ? "max-h-screen" : "max-h-0"
           }`}
         >
-          {["Messages", "Forums", "Announcements"].map((item) => (
-            <li key={item}>
-              <a
-                className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
-                  isCollapsed ? "hidden" : ""
-                }`}
-              >
-                {item}
-              </a>
+          {[
+            { name: "Communication Portal", link: "/Submission.jsx" },
+            { name: "Feedback Channels", link: "LoginForm.jsx" },
+ 
+          ].map((item, index) => (
+            <li key={index}>
+              {item.link ? (
+                <a
+                  href={item.link}
+                  className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
+                    isCollapsed ? "hidden" : ""
+                  }`}
+                >
+                  {item.name}
+                </a>
+              ) : (
+                <span
+                  className={`text-sm flex justify-between py-1 ${
+                    isCollapsed ? "hidden" : ""
+                  }`}
+                >
+                  {item.name}
+                </span>
+              )}
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Workforce Analytics Section */}
+      {/* WorkforceAnalytics */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
           onClick={toggleDropdownAnalytics}
           aria-expanded={isDropdownOpenAnalytics}
           aria-controls="analytics-dropdown"
-          aria-label="Workforce Analytics"
+          aria-label="Analytics Apps"
         >
-          <IoDocumentTextOutline className="w-5 h-5" />
+          <BsBoxSeam className="w-5 h-5" />
           {!isCollapsed && <span>Workforce Analytics</span>}
           {!isCollapsed && (
             <div className="ml-auto">
@@ -235,19 +258,37 @@ const Sidebar = () => {
             isDropdownOpenAnalytics ? "max-h-screen" : "max-h-0"
           }`}
         >
-          {["Employee Metrics", "Performance Analytics", "Attrition Rates"].map((item) => (
-            <li key={item}>
-              <a
-                className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
-                  isCollapsed ? "hidden" : ""
-                }`}
-              >
-                {item}
-              </a>
+          {[
+            { name: "Employee Performance Analytics ", link: "/login" },
+            { name: "Employee Record Management", link: "LoginForm.jsx" },
+            
+
+          ].map((item, index) => (
+            <li key={index}>
+              {item.link ? (
+                <a
+                  href={item.link}
+                  className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
+                    isCollapsed ? "hidden" : ""
+                  }`}
+                >
+                  {item.name}
+                </a>
+              ) : (
+                <span
+                  className={`text-sm flex justify-between py-1 ${
+                    isCollapsed ? "hidden" : ""
+                  }`}
+                >
+                  {item.name}
+                </span>
+              )}
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Other sections remain unchanged... */}
     </div>
   );
 };

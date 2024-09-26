@@ -102,10 +102,10 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Submission", link: "/submission" }, // Adjusted to use Link
+            { name: "Employee Complaint", link: "/complaint" }, // Adjusted to use Link
             { name: "Tracking", link: "/tracking" },
             { name: "Investigation & Solution", link: "/investigation" },
-            { name: "Feedback & Satisfaction", link: "/feedback" },
+            { name: "Compensation Planning (HR3)", link: "/feedback" },
           ].map((item) => (
             <li key={item.name}>
               <Link
@@ -197,7 +197,7 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Communication Portal", link: "/communication-portal" },
+            { name: "Communication Portal", link: "/communicationportal" },
             { name: "Feedback Channels", link: "/feedback-channels" },
           ].map((item) => (
             <li key={item.name}>
@@ -259,15 +259,7 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      {/* Other Sections */}
-      <div className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200">
-        <FaWpforms className="w-5 h-5" />
-        {!isCollapsed && <span>Forms</span>}
-      </div>
-      <div className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200">
-        <HiRefresh className="w-5 h-5" />
-        {!isCollapsed && <span>Refresh</span>}
-      </div>
+     
     </div>
   );
 };

@@ -3,6 +3,7 @@ import LoginForm from './pages/LoginForm';
 import Sidebar from './Components/Sidebar';
 import Search from './Components/Search';
 import Dashboard from './Components/Dashboard';
+import './index.css';
 
 
 

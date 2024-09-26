@@ -3,24 +3,18 @@ import layout from "./Assets/layout.png";
 import { MdOutlineScreenshotMonitor } from "react-icons/md";
 import { BsBoxSeam } from "react-icons/bs";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import {
-  IoFileTrayOutline,
-  IoChatboxOutline,
-  IoDocumentTextOutline,
-} from "react-icons/io5";
+import { Link } from "react-router-dom"; // Import Link
+import { IoFileTrayOutline, IoChatboxOutline, IoDocumentTextOutline } from "react-icons/io5"; // Adjusted import
 import { RiFilePaper2Line } from "react-icons/ri";
 import { FiBox } from "react-icons/fi";
 import { FaWpforms } from "react-icons/fa";
-import { Link, useHref } from "react-router-dom"; // Import Link
 import { HiRefresh } from "react-icons/hi";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDropdownOpenGrievance, setIsDropdownOpenGrievance] = useState(false);
-  const [isDropdownOpenEngagement, setIsDropdownOpenEngagement] =
-    useState(false);
-  const [isDropdownOpenCommunication, setIsDropdownOpenCommunication] =
-    useState(false);
+  const [isDropdownOpenEngagement, setIsDropdownOpenEngagement] = useState(false);
+  const [isDropdownOpenCommunication, setIsDropdownOpenCommunication] = useState(false);
   const [isDropdownOpenAnalytics, setIsDropdownOpenAnalytics] = useState(false);
 
   const toggleSidebar = () => {
@@ -51,12 +45,10 @@ const Sidebar = () => {
       aria-label="Sidebar"
     >
       {/* Toggle Button */}
-      <div className="flex justify-e">
+      <div className="flex justify-end">
         <button
           onClick={toggleSidebar}
-          className={`mb-4 p-1 text-black border border-gray-300 rounded-md hover:bg-gray-200 transition duration-200  ${
-            isCollapsed ? "w-11" : "w-11 "
-          }`}
+          className="mb-4 p-1 text-black border border-gray-300 rounded-md hover:bg-gray-200 transition duration-200 w-11"
           aria-expanded={!isCollapsed}
           aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
@@ -110,25 +102,26 @@ const Sidebar = () => {
           }`}
         >
           {[
-            <a href=".pages/LoginForm">Submission</a>,
-            "Tracking",
-            "Investigation & Solution",
-            "Compensation Management (HR3)",
+            { name: "Submission", link: "/submission" }, // Adjusted to use Link
+            { name: "Tracking", link: "/tracking" },
+            { name: "Investigation & Solution", link: "/investigation" },
+            { name: "Feedback & Satisfaction", link: "/feedback" },
           ].map((item) => (
-            <li key={item}>
-              <a
+            <li key={item.name}>
+              <Link
+                to={item.link}
                 className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
                   isCollapsed ? "hidden" : ""
                 }`}
               >
-                {item}
-              </a>
+                {item.name}
+              </Link>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* OpenEngagement */}
+      {/* Employee Engagement Section */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
@@ -156,26 +149,27 @@ const Sidebar = () => {
           }`}
         >
           {[
-            "Submission",
-            "Payable (Finance)",
-            "Case Management",
-            "Investigation & Solution",
-            "Feedback & Satisfaction",
+            { name: "Submission", link: "/engagement-submission" },
+            { name: "Payable (Finance)", link: "/payable" },
+            { name: "Case Management", link: "/case-management" },
+            { name: "Investigation & Solution", link: "/investigation" },
+            { name: "Feedback & Satisfaction", link: "/feedback" },
           ].map((item) => (
-            <li key={item}>
-              <a
+            <li key={item.name}>
+              <Link
+                to={item.link}
                 className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
                   isCollapsed ? "hidden" : ""
                 }`}
               >
-                {item}
-              </a>
+                {item.name}
+              </Link>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* OpenCommunication */}
+      {/* Employee Communication Section */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
@@ -203,35 +197,24 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Communication Portal", link: "/Submission.jsx" },
-            { name: "Feedback Channels", link: "LoginForm.jsx" },
- 
-          ].map((item, index) => (
-            <li key={index}>
-              {item.link ? (
-                <a
-                  href={item.link}
-                  className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
-                    isCollapsed ? "hidden" : ""
-                  }`}
-                >
-                  {item.name}
-                </a>
-              ) : (
-                <span
-                  className={`text-sm flex justify-between py-1 ${
-                    isCollapsed ? "hidden" : ""
-                  }`}
-                >
-                  {item.name}
-                </span>
-              )}
+            { name: "Communication Portal", link: "/communication-portal" },
+            { name: "Feedback Channels", link: "/feedback-channels" },
+          ].map((item) => (
+            <li key={item.name}>
+              <Link
+                to={item.link}
+                className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
+                  isCollapsed ? "hidden" : ""
+                }`}
+              >
+                {item.name}
+              </Link>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* WorkforceAnalytics */}
+      {/* Analytics Section */}
       <div className="mb-2">
         <div
           className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200"
@@ -241,7 +224,7 @@ const Sidebar = () => {
           aria-label="Analytics Apps"
         >
           <BsBoxSeam className="w-5 h-5" />
-          {!isCollapsed && <span>Workforce Analytics</span>}
+          {!isCollapsed && <span>Analytics</span>}
           {!isCollapsed && (
             <div className="ml-auto">
               {isDropdownOpenAnalytics ? (
@@ -259,36 +242,32 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Employee Performance Analytics ", link: "/login" },
-            { name: "Employee Record Management", link: "LoginForm.jsx" },
-            
-
-          ].map((item, index) => (
-            <li key={index}>
-              {item.link ? (
-                <a
-                  href={item.link}
-                  className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
-                    isCollapsed ? "hidden" : ""
-                  }`}
-                >
-                  {item.name}
-                </a>
-              ) : (
-                <span
-                  className={`text-sm flex justify-between py-1 ${
-                    isCollapsed ? "hidden" : ""
-                  }`}
-                >
-                  {item.name}
-                </span>
-              )}
+            { name: "Workforce Analytics", link: "/dashboard" },
+            { name: "Engagement Analytics", link: "/engagement-analytics" },
+          ].map((item) => (
+            <li key={item.name}>
+              <Link
+                to={item.link}
+                className={`text-sm flex justify-between py-1 cursor-pointer hover:text-blue-500 transition ${
+                  isCollapsed ? "hidden" : ""
+                }`}
+              >
+                {item.name}
+              </Link>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Other sections remain unchanged... */}
+      {/* Other Sections */}
+      <div className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200">
+        <FaWpforms className="w-5 h-5" />
+        {!isCollapsed && <span>Forms</span>}
+      </div>
+      <div className="flex gap-2 items-center cursor-pointer text-sm hover:text-blue-500 transition duration-200">
+        <HiRefresh className="w-5 h-5" />
+        {!isCollapsed && <span>Refresh</span>}
+      </div>
     </div>
   );
 };

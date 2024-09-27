@@ -5,6 +5,7 @@ import Search from "./Components/Search";
 import Dashboard from "./Components/Dashboard";
 import Complaint from "./Components/Complaint";
 import CommunicationPortal from "./Components/CommunicationPortal";
+import RequestCompensationDetails from "./Components/RequestCompensationDetails";
 import "./index.css";
 
 const App = () => {
@@ -20,6 +21,7 @@ const App = () => {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/complaint" element={<Complaint />} />
           <Route path="/communicationportal" element={<CommunicationPortal />} />
+          <Route path="/requestcompensationdetails" element={<RequestCompensationDetails />} />
         </Routes>
       </div>
     </div>

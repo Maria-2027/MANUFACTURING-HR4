@@ -105,7 +105,7 @@ const Sidebar = () => {
             { name: "Employee Complaint", link: "/complaint" }, // Adjusted to use Link
             { name: "Tracking", link: "/tracking" },
             { name: "Investigation & Solution", link: "/investigation" },
-            { name: "Compensation Planning (HR3)", link: "/feedback" },
+            { name: "Compensation Planning (HR3)", link: "/requestcompensationdetails" },
           ].map((item) => (
             <li key={item.name}>
               <Link
@@ -149,7 +149,7 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Submission", link: "/engagement-submission" },
+            { name: "Request Insight", link: "/engagreement-request" },
             { name: "Payable (Finance)", link: "/payable" },
             { name: "Case Management", link: "/case-management" },
             { name: "Investigation & Solution", link: "/investigation" },

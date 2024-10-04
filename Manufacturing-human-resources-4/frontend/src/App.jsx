@@ -3,7 +3,8 @@ import LoginForm from "./pages/LoginForm";
 import Sidebar from "./Components/Sidebar";
 import Search from "./Components/Search";
 import Dashboard from "./Components/Dashboard";
-import Complaint from "./Components/Complaint";
+import EmComplaint from "./Components/EmComplaint";
+import CoCompplaint from "./Components/CoComplaint";
 import CommunicationPortal from "./Components/CommunicationPortal";
 import RequestCompensationDetails from "./Components/RequestCompensationDetails";
 import "./index.css";
@@ -19,9 +20,10 @@ const App = () => {
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/login" element={<LoginForm />} />
-          <Route path="/complaint" element={<Complaint />} />
+          <Route path="/EmComplaint" element={<EmComplaint />} />
           <Route path="/communicationportal" element={<CommunicationPortal />} />
           <Route path="/requestcompensationdetails" element={<RequestCompensationDetails />} />
+          <Route path="/CoComplaint" element={<CoCompplaint />} />
         </Routes>
       </div>
     </div>

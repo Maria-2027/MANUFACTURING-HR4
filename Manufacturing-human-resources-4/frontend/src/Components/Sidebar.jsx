@@ -102,8 +102,8 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Employee Complaint", link: "/complaint" }, // Adjusted to use Link
-            { name: "Tracking", link: "/tracking" },
+            { name: "Employee Complaint", link: "/EmComplaint" }, 
+            { name: "Customer Complaint", link: "/CoComplaint" },
             { name: "Investigation & Solution", link: "/investigation" },
             { name: "Compensation Planning (HR3)", link: "/requestcompensationdetails" },
           ].map((item) => (

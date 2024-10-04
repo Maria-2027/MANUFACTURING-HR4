@@ -32,7 +32,7 @@ const ComplaintPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-8 bg-gradient-to-r from-blue-50 via-white to-blue-50 rounded-lg shadow-xl">
-      <h1 className="text-4xl font-extrabold text-gray-800 mb-6 text-center">Complainant Page</h1>
+      <h1 className="text-4xl font-extrabold text-gray-800 mb-6 text-center">Customer Complainant Page</h1>
       <p className="mb-8 text-lg text-gray-600 text-center">We value your feedback. Please fill out the form below to submit your complaint.</p>
 
       {submitted ? (

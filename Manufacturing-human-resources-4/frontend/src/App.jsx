@@ -5,6 +5,7 @@ import Search from "./Components/Search";
 import Dashboard from "./Components/Dashboard";
 import EmComplaint from "./Components/EmComplaint";
 import CoCompplaint from "./Components/CoComplaint";
+import RequestFunds from "./Components/RequestFunds";
 import CommunicationPortal from "./Components/CommunicationPortal";
 import RequestCompensationDetails from "./Components/RequestCompensationDetails";
 import "./index.css";
@@ -23,6 +24,7 @@ const App = () => {
           <Route path="/EmComplaint" element={<EmComplaint />} />
           <Route path="/communicationportal" element={<CommunicationPortal />} />
           <Route path="/requestcompensationdetails" element={<RequestCompensationDetails />} />
+          <Route path="/RequestFunds" element={<RequestFunds />} />
           <Route path="/CoComplaint" element={<CoCompplaint />} />
         </Routes>
       </div>

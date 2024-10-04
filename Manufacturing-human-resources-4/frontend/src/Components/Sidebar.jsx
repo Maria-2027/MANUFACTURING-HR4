@@ -150,7 +150,7 @@ const Sidebar = () => {
         >
           {[
             { name: "Request Insight", link: "/engagreement-request" },
-            { name: "Payable (Finance)", link: "/payable" },
+            { name: "Request Funds", link: "/RequestFunds" },
             { name: "Case Management", link: "/case-management" },
             { name: "Investigation & Solution", link: "/investigation" },
             { name: "Feedback & Satisfaction", link: "/feedback" },

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import layout from "./Assets/layout.png";
+import layout from "./Assets/layout.jpg";
 import { MdOutlineScreenshotMonitor } from "react-icons/md";
 import { BsBoxSeam } from "react-icons/bs";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import { Link } from "react-router-dom"; // Import Link
-import { IoFileTrayOutline, IoChatboxOutline, IoDocumentTextOutline } from "react-icons/io5"; // Adjusted import
+import { Link } from "react-router-dom";
+import { IoChatboxEllipsesOutline } from "react-icons/io5";
+import { IoFileTrayOutline, IoChatboxOutline, IoDocumentTextOutline } from "react-icons/io5"; 
 import { RiFilePaper2Line } from "react-icons/ri";
 import { FiBox } from "react-icons/fi";
 import { FaWpforms } from "react-icons/fa";
@@ -39,7 +40,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`flex flex-col h-screen bg-white text-black px-4 py-4 border-r-2 sticky top-0 max-md:hidden transition-all duration-300 ${
+      className={`flex flex-col h-screen bg-sky-400 text-black px-4 py-4 border-r-2 sticky top-0 max-md:hidden transition-all duration-300 ${
         isCollapsed ? "w-20" : "w-72 lg:w-80"
       }`}
       aria-label="Sidebar"
@@ -57,21 +58,15 @@ const Sidebar = () => {
       </div>
 
       {/* Logo */}
-      <div
-        className="flex items-center gap-2 cursor-pointer mb-8 justify-center"
-        aria-label="Dashboard Logo"
-      >
-        <img src={layout} alt="Dashboard logo" className="w-10 h-10" />
-        {!isCollapsed && <p className="text-xl font-bold">Dashboard</p>}
-      </div>
-
-      {/* Dashboard */}
-      <div
-        className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 transition-all duration-300 p-2 rounded-md mb-4 cursor-pointer"
-        aria-label="Dashboard"
-      >
-        <MdOutlineScreenshotMonitor className="w-5 h-5" />
-        {!isCollapsed && <p className="text-sm font-semibold">Dashboard</p>}
+      <div>
+        <Link
+          to="/Dashboard"
+          className="flex items-center gap-2 cursor-pointer mb-8 justify-center"
+          aria-label="Dashboard Logo"
+        >
+          <img src={layout} alt="Dashboard logo" className="w-10 h-10" />
+          {!isCollapsed && <p className="text-xl font-bold">Dashboard</p>}
+        </Link>
       </div>
 
       {/* Grievance Section */}
@@ -130,7 +125,7 @@ const Sidebar = () => {
           aria-controls="engagement-dropdown"
           aria-label="Engagement Apps"
         >
-          <BsBoxSeam className="w-5 h-5" />
+          <FaWpforms className="w-5 h-5" />
           {!isCollapsed && <span>Employee Engagement</span>}
           {!isCollapsed && (
             <div className="ml-auto">
@@ -178,8 +173,8 @@ const Sidebar = () => {
           aria-controls="communication-dropdown"
           aria-label="Communication Apps"
         >
-          <BsBoxSeam className="w-5 h-5" />
-          {!isCollapsed && <span>Employee Communication</span>}
+          <IoChatboxEllipsesOutline className="w-5 h-5" />
+          {!isCollapsed && <span> Employee Communication</span>}
           {!isCollapsed && (
             <div className="ml-auto">
               {isDropdownOpenCommunication ? (
@@ -223,8 +218,8 @@ const Sidebar = () => {
           aria-controls="analytics-dropdown"
           aria-label="Analytics Apps"
         >
-          <BsBoxSeam className="w-5 h-5" />
-          {!isCollapsed && <span>Analytics</span>}
+          <FiBox className="w-5 h-5" />
+          {!isCollapsed && <span>Workforce Analytics</span>}
           {!isCollapsed && (
             <div className="ml-auto">
               {isDropdownOpenAnalytics ? (
@@ -242,8 +237,9 @@ const Sidebar = () => {
           }`}
         >
           {[
-            { name: "Workforce Analytics", link: "/dashboard" },
-            { name: "Engagement Analytics", link: "/engagement-analytics" },
+            { name: "Workforce Analytics", link: "/Workforce" },
+            { name: "Performance Metrics", link: "/performancemetrics" },
+            { name: "Predictive Analytics", link: "/predictiveanalytics" },
           ].map((item) => (
             <li key={item.name}>
               <Link
@@ -258,8 +254,6 @@ const Sidebar = () => {
           ))}
         </ul>
       </div>
-
-     
     </div>
   );
 };

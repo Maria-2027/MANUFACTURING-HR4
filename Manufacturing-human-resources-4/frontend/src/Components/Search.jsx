@@ -1,23 +1,55 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { RiMenuFold2Fill } from "react-icons/ri";
-import { MdOutlineDarkMode } from "react-icons/md";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { Link } from "react-router-dom";
 
 const Search = () => {
+  // State to toggle notification dropdown and unread count
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(3); // Example: 3 unread notifications
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false); // Profile dropdown state
+  const dropdownRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+
+  // Close dropdowns when clicking outside of them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Toggle notification dropdown
+  const toggleNotification = () => {
+    setIsNotificationOpen((prev) => !prev);
+    setUnreadNotifications(0); // Mark all notifications as read when opening
+  };
+
+  // Toggle profile dropdown
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen((prev) => !prev);
+  };
+
   return (
-    <div className="w-full p-5 bg-white text-black/70 h-[85px] rounded-l-sm sticky top-0 z-50">
+    <div className={`w-full p-5 h-[85px] rounded-l-sm sticky top-0 z-50 bg-white text-black/70`}>
       <div className="flex justify-between max-md:flex max-md:justify-end">
         <div className="flex gap-5 items-center w-[600px] max-md:hidden">
           {/* Sidebar toggle button */}
+          <RiMenuFold2Fill className="text-lg cursor-pointer" />
 
           {/* Search form */}
-          <form className="flex items-center max-w-lg w-full ">
-            <label htmlFor="voice-search" className="sr-only">
-              Search
-            </label>
-            <div className="relative w-full ">
-              <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none ">
+          <form className="flex items-center max-w-lg w-full">
+            <label htmlFor="voice-search" className="sr-only">Search</label>
+            <div className="relative w-full">
+              <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                 <svg
                   className="w-4 h-4 text-gray-500 dark:text-gray-400"
                   aria-hidden="true"
@@ -37,7 +69,7 @@ const Search = () => {
               <input
                 type="text"
                 id="voice-search"
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:border-gray-500 dark:placeholder-gray-500 dark:text-zinc-700 dark:focus:ring-blue-500 dark:focus:border-blue-500 duration-200 "
+                className={`bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 duration-200`}
                 placeholder="Search Stocks, Prices, Sell..."
                 required
               />
@@ -64,7 +96,7 @@ const Search = () => {
             </div>
             <button
               type="submit"
-              className="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium text-white bg-blue-700 rounded-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              className="inline-flex items-center py-2.5 px-3 ms-2 text-sm font-medium text-white bg-blue-700 rounded-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300"
             >
               <svg
                 className="w-4 h-4 me-2"
@@ -88,40 +120,74 @@ const Search = () => {
 
         {/* Right-side icons and user profile */}
         <div className="flex gap-3 items-center">
-          <MdOutlineDarkMode className="size-6 cursor-pointer" />
-          <input
-            type="checkbox"
-            value="synthwave"
-            class="toggle theme-controller"
-          />
-          <IoMdNotificationsOutline className="size-6 cursor-pointer" />
-          <div className="dropdown dropdown-end">
+          {/* Notification Icon with Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <div className="relative cursor-pointer" onClick={toggleNotification}>
+              <IoMdNotificationsOutline className="text-xl" aria-label="Notifications" />
+              {unreadNotifications > 0 && (
+                <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-ping">
+                  {unreadNotifications}
+                </span>
+              )}
+            </div>
+            {isNotificationOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 z-50 transition-all transform origin-top-right duration-300 scale-100 opacity-100 ease-out">
+                <h3 className="text-sm font-semibold mb-2">Notifications</h3>
+                <ul className="space-y-2">
+                  <li className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                    <p className="font-medium">New message from John</p>
+                    <span className="text-xs text-gray-400">2 minutes ago</span>
+                  </li>
+                  <li className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                    <p className="font-medium">System update available</p>
+                    <span className="text-xs text-gray-400">1 hour ago</span>
+                  </li>
+                  <li className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                    <p className="font-medium">Reminder: Meeting at 3 PM</p>
+                    <span className="text-xs text-gray-400">Today at 2:30 PM</span>
+                  </li>
+                </ul>
+                <div className="text-right mt-3">
+                  <Link
+                    to="/notifications"
+                    className="text-blue-500 text-sm hover:underline"
+                  >
+                    See all notifications
+                  </Link>
+                  <button
+                    onClick={() => setIsNotificationOpen(false)}
+                    className="text-gray-500 text-xs hover:underline ml-3"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile Dropdown */}
+          <div className="relative" ref={profileDropdownRef}>
             <img
               src="https://i.pinimg.com/736x/ea/21/05/ea21052f12b135e2f343b0c5ca8aeabc.jpg"
               tabIndex={0}
               role="button"
-              alt="/"
-              className="size-10 rounded-full"
+              alt="user"
+              className="w-10 h-10 rounded-full cursor-pointer"
+              onClick={toggleProfileDropdown}
             />
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu bg-white rounded-box z-[1] w-52 p-2 mt-2 shadow"
-            >
-              <li>
-                <a>Profile</a>
-              </li>
-              <li>
-                <a>Settings</a>
-              </li>
-              <li>
-                  <Link
-                    to="/login"
-                 
-                  >
-                      <p className="text-sm font-semibold">Logout</p>
-                  </Link>
-              </li>
-            </ul>
+            {isProfileDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg p-3 z-50 transition-all transform origin-top-right duration-300 scale-100 opacity-100 ease-out">
+                <Link to="/profile" className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                  Profile
+                </Link>
+                <Link to="/settings" className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                  Settings
+                </Link>
+                <Link to="/login" className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                  Logout
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

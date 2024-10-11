@@ -11,6 +11,7 @@ const RequestFunds = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true); // Initialize loading state to true
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -21,25 +22,38 @@ const RequestFunds = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Start loading
     console.log('Funds Request Submitted: ', formData);
+
+    // Simulate a network request
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate network delay
     setSubmitted(true);
-    // Add logic to send request to backend (e.g. Axios POST request)
+    setLoading(false); // End loading
   };
 
   const handleBackClick = () => {
     navigate(-1); // Navigate back to the previous page
   };
 
-  return (
-    <div className="max-w-3xl mx-auto p-8 bg-gradient-to-r from-green-50 via-white to-green-50 rounded-lg shadow-xl">
-      <h1 className="text-4xl font-extrabold text-gray-800 mb-6 text-center">
-        Request Funds from Finance (Payable) to Employee Engagement
-      </h1>
+  // Simulate loading for a brief moment
+  setTimeout(() => {
+    setLoading(false); // Change loading state after 2 seconds
+  }, 2000); // Adjust the loading time as needed
 
-      {submitted ? (
-        <div className="text-center">
+  return (
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center">
+      {loading ? (
+        <div className="container mx-auto p-8 bg-gray-200 min-h-screen flex items-center justify-center w-full">
+          <div className="flex flex-col items-center">
+            {/* Loading Spinner */}
+            <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-gray-600 mb-4"></div>
+            <p className="text-gray-600 text-xl">Loading...</p>
+          </div>
+        </div>
+      ) : submitted ? (
+        <div className="text-center w-full max-w-lg mx-auto">
           <div className="bg-green-100 text-green-700 font-semibold p-4 rounded-lg mb-6">
             Your request has been submitted successfully.
           </div>
@@ -51,7 +65,7 @@ const RequestFunds = () => {
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
+        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8 w-full max-w-lg mx-auto">
           <div className="mb-6">
             <label className="block text-gray-700 font-bold text-lg mb-2" htmlFor="requesterName">
               Requester Name
@@ -70,7 +84,7 @@ const RequestFunds = () => {
 
           <div className="mb-6">
             <label className="block text-gray-700 font-bold text-lg mb-2" htmlFor="amount">
-              Amount Requested (in Peso)
+              Amount Requested
             </label>
             <input
               type="number"

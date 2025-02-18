@@ -23,3 +23,4 @@ const authUser = asyncHandler(async (req, res) => {
 });
 
 export { authUser }; // Use named export
+// asdaadadasdasdasdasd

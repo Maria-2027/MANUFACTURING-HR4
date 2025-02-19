@@ -1,9 +1,14 @@
-import express from 'express'; 
-import { authUser } from '../controllers/userController.js';
-
-const UserRouter = express.Router();
-
-UserRouter.post('/login', authUser); 
+import express from 'express';
+import { signup } from '../controllers/user.controller.js';
+import { login, getUserProfile } from '../controllers/userController.js';
+import {authMiddleware} from './auth.js';
 
 
-export default UserRouter;
+const router = express.Router();
+
+router.post('/signup', signup);
+router.post('/login', login);
+router.get('/profile', authMiddleware, getUserProfile); // 🔒 Protected Route
+
+
+export default router;

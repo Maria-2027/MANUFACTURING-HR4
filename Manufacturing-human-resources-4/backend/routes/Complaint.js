@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require('express');//ito 
 const Complaint = require('../models/Complaint');
-
+// ito dapat import express from express kasi ung node modules mo naka models
 const router = express.Router();
 
 // POST: Create a new complaint

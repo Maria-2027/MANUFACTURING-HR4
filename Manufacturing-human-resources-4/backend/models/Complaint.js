@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-// Complaint Schema
 const complaintSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  complaint: { type: String, required: true },
+  FullName: { type: String, required: true },
+  ComplaintDescription: { type: String, required: true },
+  File: { type: String }, // Allow files to be optional
   date: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('Complaint', complaintSchema);
+const ComplaintUser = mongoose.model('Complaint', complaintSchema);
+export default ComplaintUser;

@@ -4,7 +4,7 @@ const Complaint = require('../models/Complaint');
 const router = express.Router();
 
 // POST: Create a new complaint
-router.post('/', async (req, res) => {
+router.post('/EmComplaint', async (req, res) => {
   try {
     const { name, email, complaint } = req.body;
     const newComplaint = new Complaint({ name, email, complaint });
@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET: Get all complaints
-router.get('/', async (req, res) => {
+router.get('/EmComplaint', async (req, res) => {
   try {
     const complaints = await Complaint.find();
     res.json(complaints);

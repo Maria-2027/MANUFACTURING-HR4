@@ -139,7 +139,9 @@ const Sidebar = () => {
             isDropdownOpenEngagement ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {[{ name: "Employee Suggestion Box", link: "/EmployeeEngagement" }].map((item) => (
+          {[{ name: "Employee Suggestion Box", link: "/EmployeeEngagement" },
+             { name: "Budget Requests", link: "/Budget Requests" },
+          ].map((item) => (
             <li key={item.name}>
               <Link
                 to={item.link}
@@ -227,7 +229,9 @@ const Sidebar = () => {
             isDropdownOpenAnalytics ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {[{ name: "Employee Analytics", link: "/Workforce" }].map((item) => (
+          {[{ name: "Employee Analytics", link: "/Workforce" },
+            { name: "Employee Records", link: "/EmployeeRecords" },
+          ].map((item) => (
             <li key={item.name}>
               <Link
                 to={item.link}
@@ -236,6 +240,7 @@ const Sidebar = () => {
                     ? 'bg-orange-700 text-white scale-105'
                     : 'hover:bg-orange-500 hover:scale-105'
                 }`}
+                
               >
                 {item.name}
               </Link>

@@ -7,6 +7,7 @@ import Search from "./Components/Search";
 import Workforce from "./Components/Workforce";
 import EmComplaint from "./Components/EmComplaint";
 import CommunicationPortal from "./Components/CommunicationPortal";
+import BudgetRequests from "./Components/BudgetRequests";
 import MessageCenter from './Components/MessageCenter';
 import Inbox from './Components/Inbox';
 import Dashboard from "./Components/Dashboard";
@@ -15,11 +16,19 @@ import "./index.css";
 import Profilepage from "../src/Components/Profilepage";
 import EmployeeEngagement from "./Components/EmployeeEngagement";
 import SettingsPage from "./Components/Settings";
+import AccountPanel from "./Components/AccountPanel";
+import AdminLoginform from "./pages/AdminLogin";
+import SidebarAdmin from "./Components/AdminDashboard";
+import AdminGrievance from "./Components/AdminGrievance";
+import AdminEmployeeSuggestion from "./Components/AdminEmployeeSuggestion";
+import AdminCommunication from "./Components/AdminCommunication";
 
 const App = () => {
   const location = useLocation();
 
-  const hideSidebarAndSearchBar = location.pathname === "/login" || location.pathname === "/signup";
+  const hideSidebarAndSearchBar = location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/ForgotPassword" 
+  || location.pathname === "/account" || location.pathname === "/admin" || location.pathname === "/admin-dashboard" || location.pathname === "/admin-grievance"
+  || location.pathname === "/admin-employee-suggestion" || location.pathname === "/admin-communication";
 
   return (
     <div className="flex min-h-screen">
@@ -29,7 +38,7 @@ const App = () => {
 
         <Routes>
           {/* Redirect the root path to the login page */}
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/account" />} />
           <Route path="/workforce" element={<Workforce />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/EmComplaint" element={<EmComplaint />} />
@@ -43,6 +52,13 @@ const App = () => {
           <Route path="/profile" element={<Profilepage />} />
           <Route path="/EmployeeEngagement" element={<EmployeeEngagement />} />
           <Route path="/Settings/" element={<SettingsPage />} />
+          <Route path="/Budget Requests" element={<BudgetRequests />} />
+          <Route exact path="/account" element={<AccountPanel />} />
+          <Route path="/admin" element={<AdminLoginform />} />
+          <Route path="/admin-dashboard" element={<SidebarAdmin />} />
+          <Route path="/admin-grievance" element={<AdminGrievance />} />
+          <Route path="/admin-employee-suggestion" element={<AdminEmployeeSuggestion />} />
+          <Route path="/admin-communication" element={<AdminCommunication />} />
         </Routes>
       </div>
     </div>

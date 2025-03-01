@@ -34,7 +34,6 @@ const AdminDashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    // Add your logout functionality here (e.g., clear session, redirect to login page)
     console.log("Logged out");
   };
 
@@ -79,41 +78,67 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <aside className={`w-72 shadow-lg p-6 flex flex-col relative ${sidebarClasses}`}>
         {/* Logo Section */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-8">
           <Link to="/admin-dashboard">
-            <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full" />
+            <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full shadow-md" />
           </Link>
         </div>
-        <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">JJM Admin Portal</h2>
 
         {/* Sidebar Links */}
         <nav className="flex-grow">
-          <ul className="space-y-4">
-            {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
-              { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
-              { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
-              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-analytics" }
-            ].map((item, index) => (
-              <li
-                key={index}
-                className={`flex items-center space-x-3 text-md font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${
-                  activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses
-                }`}
-                onClick={() => setActiveTab(item.title)}
+          <ul className="space-y-5">
+            <li
+              className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Grievances" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
+            >
+              <Link
+                to="/admin-grievance"
+                className="flex items-center space-x-3"
+                onClick={() => setActiveTab("Employee Grievances")}
               >
-                {item.link ? (
-                  <Link to={item.link} className="flex items-center space-x-3">
-                    {item.icon}
-                    <span>{item.title}</span>
-                  </Link>
-                ) : (
-                  <>
-                    {item.icon}
-                    <span>{item.title}</span>
-                  </>
-                )}
-              </li>
-            ))}
+                <FaExclamationCircle className="text-lg" />
+                <span>Employee Grievances</span>
+              </Link>
+            </li>
+
+            <li
+              className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Suggestions" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
+            >
+              <Link
+                to="/admin-employee-suggestion"
+                className="flex items-center space-x-3"
+                onClick={() => setActiveTab("Employee Suggestions")}
+              >
+                <FaRegCommentDots className="text-lg" />
+                <span>Employee Suggestions</span>
+              </Link>
+            </li>
+
+            <li
+              className={`p-3 rounded-md transition duration-200 ${activeTab === "Communication Hub" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
+            >
+              <Link
+                to="/admin-communication"
+                className="flex items-center space-x-3"
+                onClick={() => setActiveTab("Communication Hub")}
+              >
+                <FaEnvelope className="text-lg" />
+                <span>Communication Hub</span>
+              </Link>
+            </li>
+
+            <li
+              className={`p-3 rounded-md transition duration-200 ${activeTab === "Workforce Analytics" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
+            >
+              <Link
+                to="/admin-workflow"
+                className="flex items-center space-x-3"
+                onClick={() => setActiveTab("Workforce Analytics")}
+              >
+                <FaChartBar className="text-lg" />
+                <span>Workforce Analytics</span>
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -163,24 +188,23 @@ const AdminDashboard = () => {
           }, {
             icon: <FaRegCommentDots />,
             title: "Employee Suggestions",
-            desc: "Review suggestions from employees to improve operations."
+            desc: "Review suggestions from employees to improve operations.",
+            link: "/admin-employee-suggestion"
           }, {
             icon: <FaEnvelope />,
             title: "Communication Hub",
-            desc: "Manage internal communication and messages."
+            desc: "Manage internal communication and messages.",
+            link: "/admin-communication"
           }, {
             icon: <FaChartBar />,
             title: "Workforce Analytics",
-            desc: "Analyze employee performance and trends."
+            desc: "Analyze employee performance and trends.",
+            link: "/admin-workforce-analytics"
           }].map((item, index) => (
             <div key={index} className={`p-6 rounded-lg shadow-lg flex flex-col items-center transform hover:scale-105 transition duration-300 ease-in-out ${cardClasses}`}>
               <div className="text-4xl text-blue-600">{item.icon}</div>
               <h3 className="mt-4 text-xl font-semibold">
-                {item.link ? (
-                  <Link to={item.link} className="hover:text-blue-600">{item.title}</Link>
-                ) : (
-                  item.title
-                )}
+                <Link to={item.link} className="hover:text-blue-600">{item.title}</Link>
               </h3>
               <p className="text-center">{item.desc}</p>
             </div>

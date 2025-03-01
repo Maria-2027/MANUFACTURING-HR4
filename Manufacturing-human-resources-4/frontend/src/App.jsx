@@ -7,7 +7,6 @@ import Search from "./Components/Search";
 import Workforce from "./Components/Workforce";
 import EmComplaint from "./Components/EmComplaint";
 import CommunicationPortal from "./Components/CommunicationPortal";
-import BudgetRequests from "./Components/BudgetRequests";
 import MessageCenter from './Components/MessageCenter';
 import Inbox from './Components/Inbox';
 import Dashboard from "./Components/Dashboard";
@@ -22,13 +21,14 @@ import SidebarAdmin from "./Components/AdminDashboard";
 import AdminGrievance from "./Components/AdminGrievance";
 import AdminEmployeeSuggestion from "./Components/AdminEmployeeSuggestion";
 import AdminCommunication from "./Components/AdminCommunication";
+import AdminWorkflow from "./Components/AdminWorkflow";
 
 const App = () => {
   const location = useLocation();
 
   const hideSidebarAndSearchBar = location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/ForgotPassword" 
   || location.pathname === "/account" || location.pathname === "/admin" || location.pathname === "/admin-dashboard" || location.pathname === "/admin-grievance"
-  || location.pathname === "/admin-employee-suggestion" || location.pathname === "/admin-communication";
+  || location.pathname === "/admin-employee-suggestion" || location.pathname === "/admin-communication" || location.pathname === "/admin-workflow";
 
   return (
     <div className="flex min-h-screen">
@@ -52,13 +52,13 @@ const App = () => {
           <Route path="/profile" element={<Profilepage />} />
           <Route path="/EmployeeEngagement" element={<EmployeeEngagement />} />
           <Route path="/Settings/" element={<SettingsPage />} />
-          <Route path="/Budget Requests" element={<BudgetRequests />} />
           <Route exact path="/account" element={<AccountPanel />} />
           <Route path="/admin" element={<AdminLoginform />} />
           <Route path="/admin-dashboard" element={<SidebarAdmin />} />
           <Route path="/admin-grievance" element={<AdminGrievance />} />
           <Route path="/admin-employee-suggestion" element={<AdminEmployeeSuggestion />} />
           <Route path="/admin-communication" element={<AdminCommunication />} />
+          <Route path="/admin-workflow" element={<AdminWorkflow />} />
         </Routes>
       </div>
     </div>

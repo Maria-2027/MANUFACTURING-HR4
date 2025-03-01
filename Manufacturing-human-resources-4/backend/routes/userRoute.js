@@ -4,6 +4,7 @@ import { login, getUserProfile } from '../controllers/userController.js';
 import { submitComplaint } from '../controllers/complaintController.js';
 import { authMiddleware } from './auth.js';
 import multer from 'multer'; // For handling file uploads
+// import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -59,5 +60,23 @@ router.post("/testLog", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+// router.get("/users", async (req, res) => {
+//   try {
+//     console.log("📡 Fetching users..."); // Debugging log
+
+//     const users = await User.find();
+
+//     if (!users || users.length === 0) {
+//       console.log("❌ No users found in database.");
+//       return res.status(404).json({ error: "No users found" });
+//     }
+
+//     console.log("✅ Users retrieved successfully:", users);
+//     res.status(200).json(users);
+//   } catch (error) {
+//     console.error("❌ Error fetching users:", error);
+//     res.status(500).json({ error: "Error fetching users", details: error.message });
+//   }
+// });
 
 export default router;

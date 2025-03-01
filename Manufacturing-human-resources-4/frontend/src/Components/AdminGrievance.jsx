@@ -93,20 +93,21 @@ return (
 
         {/* Sidebar Links */}
         <nav className="flex-grow">
-<ul className="space-y-4"> {/* Reduced space between items */}
-    {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
-    { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
-    { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
-    { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-analytics" },
+<ul className="space-y-4">
+    {[
+        { title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
+        { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
+        { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
+        { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-analytics" },
     ].map((item, index) => (
-    <li
-        key={index}
-        className={`flex items-center space-x-3 text-base font-medium p-2 rounded-md cursor-pointer transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-        onClick={() => setActiveTab(item.title)}
-    >
-        {item.icon}
-        <span>{item.title}</span>
-    </li>
+        <li
+            key={index}
+            className={`flex items-center space-x-3 text-base font-medium p-2 rounded-md cursor-pointer transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
+            onClick={() => navigate(item.link)} // Dito na magre-redirect
+        >
+            {item.icon}
+            <span>{item.title}</span>
+        </li>
     ))}
 </ul>
 </nav>

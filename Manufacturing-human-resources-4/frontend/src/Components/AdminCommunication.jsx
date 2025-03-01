@@ -31,8 +31,8 @@ const AdminCommunication = () => {
             {[
               { title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
               { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
-              { title: "Communication Hub", icon: <FaEnvelope className="text-lg" /> },
-              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" /> },
+              { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
+              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workforce" },
             ].map((item, index) => (
               <li
                 key={index}

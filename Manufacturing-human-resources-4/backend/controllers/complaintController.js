@@ -1,6 +1,6 @@
 // this file is backend/controllers/complaintController.js
 
-import ComplaintUser from "../models/Complaint.js";
+import ComplaintUser from "../models/ComplaintUser.js";
 
 export const submitComplaint = async (req, res) => {
   try {

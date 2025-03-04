@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 import layoutImage from "../Components/Assets/layout.jpg"; // Company Branding Image
+import axios from 'axios'; // Import axios
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -9,13 +10,14 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
-    username: "",
+    email: "", // Changed from username to email
     password: "",
   });
 
   const [isLoading, setIsLoading] = useState(true);
   const [fadeInForm, setFadeInForm] = useState(false);
   const [fadeInText, setFadeInText] = useState(false);
+  const APIBASED = "http://localhost:7688";
 
   useEffect(() => {
     setTimeout(() => {
@@ -33,15 +35,41 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async (e) => {
+
+ 
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setSuccess("Login Successful. Redirecting...");
-      setTimeout(() => {
-        navigate("/admin-dashboard");
-      }, 2000);
-    }, 1000);
+    console.log(formData)
+    try {
+      // Log the request data to ensure it's correct
+      console.log("Login Request Data:", formData);
+  
+      // Send login request to backend API
+      const response = await axios.post  (`${APIBASED}/api/auth/testLog`, formData);
+  
+      // Log the response to check its content
+      console.log("Backend Response:", response.data);
+  
+      // Handle success response
+      if (response.status === 200) {
+        setSuccess("Login Successful. Redirecting...");
+        setTimeout(() => {
+          navigate("/admin-dashboard");
+        }, 2000);
+      }
+    } catch (err) {
+      // Log the error to check its details
+      console.error("Login Error:", err.response || err);
+      if (err.response) {
+        setError(err.response.data.message); // Display error message from backend
+      } else {
+        setError("Server error. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   if (isLoading) {
     return (
@@ -63,10 +91,10 @@ const AdminLogin = () => {
           {success && <p className="bg-green-600 text-white p-2 rounded-md text-center mb-4">{success}</p>}
           <div className="relative mb-6">
             <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
               onChange={handleChange}
               className="w-full p-4 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
               required

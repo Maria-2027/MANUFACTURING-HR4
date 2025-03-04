@@ -4,6 +4,12 @@ import { login, getUserProfile } from '../controllers/userController.js';
 import { submitComplaint } from '../controllers/complaintController.js';
 import { authMiddleware } from './auth.js';
 import multer from 'multer'; // For handling file uploads
+import { generateServiceToken } from '../middleware/gatewayTokenGenerator.js';
+import axios from 'axios'; // Added axios import
+import bcrypt from 'bcryptjs'; 
+import jwt from 'jsonwebtoken';
+
+
 // import User from '../models/User.js';
 
 const router = express.Router();
@@ -26,40 +32,70 @@ router.post('/login', login);
 router.get('/profile', authMiddleware, getUserProfile);
 router.post('/EmComplaint', upload.single("File"), submitComplaint); // New route
 router.post("/testLog", async (req, res) => {
+
   try {
     const { email, password } = req.body;
+    console.log(email)
+    console.log(password)
+    console.log("Login attempt for:", email); // Log incoming email
 
+    // Generate a service token
     const serviceToken = generateServiceToken();
+    console.log("Generated Service Token:", serviceToken); // Log generated token
 
-    // Fetch users from API Gateway
+    // Fetch users from the API Gateway
     const response = await axios.get(
-      `${process.env.API_GATEWAY_URL}/admin/get-accounts`,
+      `${process.env.APP_API_URL}/admin/get-accounts`,
       {
         headers: { Authorization: `Bearer ${serviceToken}` },
       }
     );
 
+    console.log("API Gateway Response:", response.data); // Log API Gateway response
+
     const users = response.data;
+
+    if (!users || users.length === 0) {
+      console.log("No users found in the API Gateway response.");
+      return res.status(400).json({ message: "No users found" });
+    }
+
     const user = users.find((u) => u.email === email);
 
     if (!user) {
+      console.log("User not found:", email);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match status:", isMatch); // Log password match status
+
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // Generate and send JWT token
-    const token = generateTokenAndSetCookie(res, user._id, user.role);
+    const token = generateToken(res, user._id, user.role);
+    console.log("Generated Token:", token); // Log generated token
     return res.status(200).json({ token, user });
   } catch (err) {
-    console.error("Error during login:", err.message);
+    console.error("Error during login:", err.message); // Log error message
     return res.status(500).json({ message: "Server error" });
   }
 });
+
+const generateToken = (res, userId, role) => {
+  // Use jsonwebtoken to create a token with user ID and role as payload
+  const token = jwt.sign(
+    { userId, role },
+    process.env.SECRET_KEY, // Secret key for signing the token
+    { expiresIn: '1h' } // Set expiration time for the token (1 hour in this case)
+  );
+  return token;
+};
+
+
+
+
 // router.get("/users", async (req, res) => {
 //   try {
 //     console.log("📡 Fetching users..."); // Debugging log

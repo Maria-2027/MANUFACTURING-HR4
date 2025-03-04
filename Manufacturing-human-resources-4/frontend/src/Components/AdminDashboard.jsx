@@ -9,6 +9,7 @@ const AdminDashboard = () => {
   const [greeting, setGreeting] = useState("");
   const [activeTab, setActiveTab] = useState();
   const [darkMode, setDarkMode] = useState(false);
+  const [userName, setUserName] = useState("John Doe"); // Fixed initialization with a default value
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -170,12 +171,25 @@ const AdminDashboard = () => {
           </button>
         </div>
 
-        <div className={`bg-white p-6 rounded-xl shadow-md text-center transition hover:shadow-2xl duration-300 ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
-          <h1 className={`text-4xl font-extrabold ${greetingTextClass}`}>
-            {greeting}, Admin
+        {/* Greeting Section */}
+        <div className={`p-6 rounded-xl shadow-md text-center transition hover:shadow-2xl duration-300 ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}>
+          <h1 className={`text-4xl font-extrabold ${
+            darkMode ? "text-white" : "text-gray-900"
+          }`}>
+            {greeting}, {userName}
           </h1>
-          <p className="text-lg mt-2">Manage employee data, monitor grievances, and oversee company performance.</p>
-          <p className="mt-4 font-semibold">Current Time: {currentTime}</p>
+          <p className={`text-lg mt-2 ${
+            darkMode ? "text-white" : "text-gray-700"
+          }`}>
+            Manage employee data, monitor grievances, and oversee company performance.
+          </p>
+          <p className={`mt-4 font-semibold ${
+            darkMode ? "text-white" : "text-gray-700"
+          }`}>
+            Current Time: {currentTime}
+          </p>
         </div>
 
         {/* Admin Cards */}

@@ -5,7 +5,7 @@ export const sendMessage = async (req, res) => {
   const { receiverId, content } = req.body;
   try {
     const message = new Message({
-      sender: req.userId,
+      sender: req.userId,  // Assuming req.userId is coming from a JWT or session middleware
       receiver: receiverId,
       content,
     });
@@ -27,7 +27,7 @@ export const getMessages = async (req, res) => {
         { sender: req.userId, receiver: userId },
         { sender: userId, receiver: req.userId },
       ],
-    }).populate('sender receiver', 'username');
+    }).populate('sender receiver', 'username');  // Assuming 'username' field exists
 
     res.json({ messages });
   } catch (err) {

@@ -140,7 +140,6 @@ const Sidebar = () => {
           }`}
         >
           {[{ name: "Employee Suggestion Box", link: "/EmployeeEngagement" },
-             { name: "Budget Requests", link: "/Budget Requests" },
           ].map((item) => (
             <li key={item.name}>
               <Link
@@ -203,51 +202,10 @@ const Sidebar = () => {
       </div>
 
       {/* Analytics Section */}
-      <div className="mb-4">
-        <div
-          className="flex gap-3 items-center cursor-pointer text-sm hover:text-orange-200 transition duration-300"
-          onClick={toggleDropdownAnalytics}
-          aria-expanded={isDropdownOpenAnalytics}
-          aria-controls="analytics-dropdown"
-          aria-label="Analytics Apps"
-        >
-          <FiBox className="w-5 h-5 text-orange-300" />
-          {!isCollapsed && <span className="font-semibold text-lg">Workforce Analytics</span>}
-          {!isCollapsed && (
-            <div className="ml-auto">
-              {isDropdownOpenAnalytics ? (
-                <IoIosArrowUp size={18} />
-              ) : (
-                <IoIosArrowDown size={18} />
-              )}
-            </div>
-          )}
-        </div>
-        <ul
-          id="analytics-dropdown"
-          className={`pl-6 mt-2 space-y-1 overflow-hidden transition-all duration-500 ease-in-out transform ${
-            isDropdownOpenAnalytics ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          {[{ name: "Employee Analytics", link: "/Workforce" },
-            { name: "Employee Records", link: "/EmployeeRecords" },
-          ].map((item) => (
-            <li key={item.name}>
-              <Link
-                to={item.link}
-                className={`text-sm flex justify-between py-2 px-4 rounded-md transition-all duration-200 ${
-                  activeDropdown === 'analytics'
-                    ? 'bg-orange-700 text-white scale-105'
-                    : 'hover:bg-orange-500 hover:scale-105'
-                }`}
-                
-              >
-                {item.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+     
+        
+        
+
     </div>
   );
 };

@@ -1,22 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import websocketService from '../services/websocket';
 
 const EmployeeChatBox = () => {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    { text: "Welcome to the team!", sender: "Admin" },
-    { text: "Hello! How's everyone doing today?", sender: "Employee1" }
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [userId] = useState(() => `employee-${Math.random().toString(36).substr(2, 9)}`);
+
+  useEffect(() => {
+    // Connect to WebSocket
+    websocketService.connect();
+
+    // Subscribe to messages
+    const unsubscribe = websocketService.subscribe((newMessage) => {
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+    });
+
+    // Fetch existing messages
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch('/api/messages');
+        const data = await response.json();
+        setMessages(data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+    return () => unsubscribe();
+  }, []);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!message) return;
+    if (!message.trim()) return;
 
     const newMessage = {
       text: message,
-      sender: 'Employee', // You can replace this with dynamic user info
+      sender: 'Employee',
+      userId: userId,
+      timestamp: new Date().toISOString()
     };
 
-    setMessages([...messages, newMessage]);
+    websocketService.sendMessage(newMessage);
     setMessage('');
   };
 

@@ -1,0 +1,26 @@
+{
+  "name": "express-handler-async",
+  "version": "0.0.1",
+  "description": "A simple express async handlers (functions) without try catch block",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "url": "https://github.com/shazee257/express-handler-async"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "keywords": [
+    "express",
+    "async",
+    "handler"
+  ],
+  "author": "shazee257@gmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  }
+}

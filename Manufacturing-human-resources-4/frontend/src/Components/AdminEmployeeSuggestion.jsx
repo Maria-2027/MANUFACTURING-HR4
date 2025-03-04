@@ -3,6 +3,8 @@ import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOu
 import layout from "./Assets/layout.jpg";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import AdminBudgetRequest from "./AdminBudgetRequest";
+import AdminBudgetStatus from "./AdminBudgetStatus";
 
 const AdminEmployeeSuggestion = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -10,25 +12,9 @@ const AdminEmployeeSuggestion = () => {
   const [activeTab, setActiveTab] = useState("Employee Suggestions");
   const [activeContent, setActiveContent] = useState("Employee Suggestions");
   const [searchTerm, setSearchTerm] = useState("");
-  const [budgetRequest, setBudgetRequest] = useState({
-    approvalId: generateApprovalId(), // Automatically set the approval ID
-    department: "HR4", // Default to HR4
-    status: "Pending",
-    totalBudget: "",
-    category: "",
-    reason: "",
-    documents: "",
-  });
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state for API requests
   const rowsPerPage = 8;
-
-  // Function to generate a unique approval ID that starts with 'HR4-'
-  function generateApprovalId() {
-    const timestamp = Date.now(); // Get the current timestamp
-    const randomNumber = Math.floor(Math.random() * 1000); // Random number between 0 and 999
-    return `HR4-${timestamp}-${randomNumber}`; // Format as 'HR4-[timestamp]-[randomNumber]'
-  }
 
   useEffect(() => {
     setLoading(true);
@@ -54,57 +40,6 @@ const AdminEmployeeSuggestion = () => {
   const themeClasses = darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900";
   const sidebarClasses = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900";
   const buttonHoverClasses = darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100";
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setBudgetRequest({
-      ...budgetRequest,
-      [name]: value,
-    });
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setBudgetRequest({
-        ...budgetRequest,
-        documents: file,
-      });
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("approvalId", budgetRequest.approvalId);
-    formData.append("department", budgetRequest.department);
-    formData.append("status", budgetRequest.status);
-    formData.append("totalBudget", budgetRequest.totalBudget);
-    formData.append("category", budgetRequest.category);
-    formData.append("reason", budgetRequest.reason);
-    formData.append("documents", budgetRequest.documents);
-
-    setLoading(true); // Show loading while submitting
-    axios
-      .post("http://localhost:7688/api/budget-requests", formData)
-      .then((response) => {
-        console.log("Budget request submitted:", response.data);
-        setBudgetRequest({
-          approvalId: generateApprovalId(), // Generate a new ID for the next request
-          department: "HR4",
-          status: "Pending",
-          totalBudget: "",
-          category: "",
-          reason: "",
-          documents: "",
-        });
-        setLoading(false); // Hide loading after submission
-      })
-      .catch((error) => {
-        console.error("Error submitting budget request:", error);
-        setLoading(false); // Hide loading after submission attempt
-      });
-  };
 
   const filteredSuggestions = suggestions.filter(
     (suggestion) =>
@@ -177,6 +112,12 @@ const AdminEmployeeSuggestion = () => {
           >
             Budget Requests
           </button>
+          <button
+            onClick={() => setActiveContent("Budget Status")}
+            className={`p-3 rounded-md ${activeContent === "Budget Status" ? "bg-blue-200 text-blue-600" : "bg-gray-200 text-gray-900"}`}
+          >
+            Budget Status
+          </button>
         </div>
 
         {/* Search Input */}
@@ -248,89 +189,9 @@ const AdminEmployeeSuggestion = () => {
           </div>
         )}
 
-        {/* Budget Request Form */}
-        {activeContent === "Budget Requests" && (
-          <div className="bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-6">Submit Budget Request</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div className="flex flex-col">
-                  <label htmlFor="approvalId" className="text-lg font-semibold">Approval ID</label>
-                  <input
-                    type="text"
-                    id="approvalId"
-                    name="approvalId"
-                    value={budgetRequest.approvalId}
-                    disabled
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="department" className="text-lg font-semibold">Department</label>
-                  <input
-                    type="text"
-                    id="department"
-                    name="department"
-                    value={budgetRequest.department}
-                    disabled
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="totalBudget" className="text-lg font-semibold">Total Budget</label>
-                  <input
-                    type="number"
-                    id="totalBudget"
-                    name="totalBudget"
-                    value={budgetRequest.totalBudget}
-                    onChange={handleInputChange}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div className="flex flex-col">
-  <label htmlFor="category" className="text-lg font-semibold">Category</label>
-  <select
-    id="category"
-    name="category"
-    value={budgetRequest.category}
-    onChange={handleInputChange}
-    className="p-3 border border-gray-300 rounded-md"
-  >
-    <option value="">Select a Category</option>
-    <option value="Operational Expenses">Operational Expenses</option>
-  </select>
-</div>
-
-                <div className="flex flex-col">
-                  <label htmlFor="reason" className="text-lg font-semibold">Reason</label>
-                  <textarea
-                    id="reason"
-                    name="reason"
-                    value={budgetRequest.reason}
-                    onChange={handleInputChange}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="documents" className="text-lg font-semibold">Upload Documents</label>
-                  <input
-                    type="file"
-                    id="documents"
-                    name="documents"
-                    onChange={handleFileChange}
-                    className="p-3 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 mt-6 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Submit Request
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+        {/* Budget Request Form and Budget Status */}
+        {activeContent === "Budget Requests" && <AdminBudgetRequest />}
+        {activeContent === "Budget Status" && <AdminBudgetStatus />}
       </main>
     </div>
   );

@@ -11,10 +11,17 @@ import Suggestion from "./models/Suggestion.js";
 import multer from "multer";  // Import multer for file handling
 import path from "path";  // For handling file paths
 import Complaint from "./routes/Complaint.js";
-import budgetRequestRoutes from './routes/budgetRequests.js';
-
+import messageRoutes from './routes/messageRoutes.js';
+import cloudinary from "cloudinary";
+import budgetRequestRoute from "./routes/budgetRequests.js";
 dotenv.config();
 const app = express();
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 
 // ✅ Middleware should be declared before defining routes
 app.use(cors());
@@ -22,22 +29,37 @@ app.use(cookieParser());
 app.use(express.json()); // Ensure JSON parsing
 
 // Set up multer storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "backend/uploads"); // Save files in the 'uploads' folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Ensure unique filenames
-  },
+const storage = multer.memoryStorage(); // Save files in memory
+const upload = multer({ storage: storage });
+
+// Upload route
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    // Upload image to Cloudinary
+    const result = await cloudinary.v2.uploader.upload_stream(
+      { resource_type: "auto" },
+      (error, result) => {
+        if (error) {
+          return res.status(500).json({ error: "Upload failed!" });
+        }
+        res.status(200).json({ url: result.secure_url });
+      }
+    );
+
+    req.file.stream.pipe(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error uploading to Cloudinary" });
+  }
 });
 
-const upload = multer({ storage: storage }); // Initialize multer with storage settings
 
 // Routes
 app.use("/api/auth", userRoutes);
 app.use("/api/auth", suggestionRoute);
 app.use("/api", Complaint);
-app.use('/api/budget-requests', budgetRequestRoutes);
+app.use('/api/budget-requests', budgetRequestRoute);
+app.use(messageRoutes);
 
 app.get("/api/auth",  (req, res) => {
   Suggestion.find()

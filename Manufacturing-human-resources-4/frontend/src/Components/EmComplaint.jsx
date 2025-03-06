@@ -74,7 +74,7 @@ const EmComplaint = ({ user }) => {
       };
 
       const response = await axios.post(
-        `${EMCOMPLAINT}/api/auth/EmComplaint`,
+        EMCOMPLAINT,
         formData,
         {
           headers: {

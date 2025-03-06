@@ -49,7 +49,7 @@ const AdminLogin = () => {
       console.log("Login Request Data:", formData);
   
       // Send login request to backend API
-      const response = await axios.post  (`${ADMINLOGIN}/api/auth/testLog`, formData);
+      const response = await axios.post  (ADMINLOGIN, formData);
   
       // Log the response to check its content
       console.log("Backend Response:", response.data);

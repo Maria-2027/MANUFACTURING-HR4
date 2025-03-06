@@ -15,7 +15,7 @@ const EmployeeSuggestionBox = ({ user }) => {
     const suggestionData = { fullName, suggestion };
 
     try {
-      const response = await fetch(`${EMSUGGEST}/api/employee-suggestions`, {
+      const response = await fetch(EMSUGGEST, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(suggestionData),

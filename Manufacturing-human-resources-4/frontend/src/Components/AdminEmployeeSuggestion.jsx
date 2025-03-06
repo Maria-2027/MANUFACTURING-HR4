@@ -23,7 +23,7 @@ const AdminEmployeeSuggestion = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get(`${ADMINSUGGESTION}/api/auth/employee-suggestions`)
+      .get(ADMINSUGGESTION)
       .then((response) => {
         const sortedSuggestions = response.data.sort(
           (a, b) => new Date(b.dateSubmitted) - new Date(a.dateSubmitted)

@@ -24,7 +24,7 @@ const AdminWorkflow = () => {
         setLoading(true);
         setError(null);
 
-        fetch(`${EMPLOYEERECORDS}/api/integration/get-time-tracking`)
+        fetch(EMPLOYEERECORDS)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);

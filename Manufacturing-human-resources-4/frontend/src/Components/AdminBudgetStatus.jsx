@@ -20,7 +20,7 @@ const AdminBudgetStatus = () => {
     try {
         const token = sessionStorage.getItem('accessToken');
         const response = await axios.post(
-          `${BUDGETSTATUS}/api/budget-requests/updateStatusFinance`,
+          BUDGETSTATUS,
           {}, // empty body
           {
             headers: { 

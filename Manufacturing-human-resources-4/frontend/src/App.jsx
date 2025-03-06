@@ -7,10 +7,7 @@ import Search from "./Components/Search";
 import Workforce from "./Components/Workforce";
 import EmComplaint from "./Components/EmComplaint";
 import CommunicationPortal from "./Components/CommunicationPortal";
-import MessageCenter from './Components/MessageCenter';
-import Inbox from './Components/Inbox';
 import Dashboard from "./Components/Dashboard";
-import EmployeeRecords from "./Components/EmployeeRecords";
 import "./index.css";
 import Profilepage from "../src/Components/Profilepage";
 import EmployeeEngagement from "./Components/EmployeeEngagement";
@@ -47,9 +44,6 @@ const App = () => {
           <Route path="/Dashboard" element={<Dashboard />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/ForgotPassword" element={<ForgotPassword />} />
-          <Route path="/message-center" element={<MessageCenter />} />
-          <Route path="/Inbox" element={<Inbox />} />
-          <Route path="/employeerecords" element={<EmployeeRecords />} />
           <Route path="/profile" element={<Profilepage />} />
           <Route path="/EmployeeEngagement" element={<EmployeeEngagement />} />
           <Route path="/Settings/" element={<SettingsPage />} />

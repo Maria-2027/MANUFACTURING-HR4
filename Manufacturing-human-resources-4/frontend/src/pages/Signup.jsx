@@ -33,7 +33,7 @@ const Register = () => {
 
     try {
       const response = await axios.post(
-        `${REGISTER}/api/auth/signup`,
+        REGISTER,
         formData
       );
       setMessage(response.data.message);

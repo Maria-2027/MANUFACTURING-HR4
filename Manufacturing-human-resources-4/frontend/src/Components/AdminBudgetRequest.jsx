@@ -92,7 +92,7 @@ const AdminBudgetRequest = () => {
       };
 
       const response = await axios.post(
-        `${BUDGETREQUEST}/api/auth/login`,
+        BUDGETREQUEST,
         payload,
         { headers: { "Content-Type": "application/json" } }
       );

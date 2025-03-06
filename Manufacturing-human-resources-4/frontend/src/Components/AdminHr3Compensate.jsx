@@ -18,7 +18,7 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${ADMINHR3}/api/auth/employee-violation`, {
+        const response = await axios.get(ADMINHR3, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}` // If you're using token authentication
           }

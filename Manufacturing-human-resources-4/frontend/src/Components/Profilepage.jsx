@@ -31,7 +31,7 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`${PROFILE}/api/auth/profile`);
+      const response = await api.get(PROFILE);
       if (response.data && response.data.success) {
         setUser(response.data.data);
       }

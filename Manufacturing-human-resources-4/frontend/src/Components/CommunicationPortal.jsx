@@ -14,7 +14,7 @@ const Announcements = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await axios.get(`${ADMINANNOUNCE}/api/integration/hr4-announcement`);
+        const response = await axios.get(ADMINANNOUNCE);
         setAnnouncements(response.data);
       } catch (error) {
         console.error('Error fetching announcements:', error);

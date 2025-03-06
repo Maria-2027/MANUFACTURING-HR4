@@ -27,7 +27,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     axios
       .get(
-        `${ADMINGRIEVANCE}/EmComplaint?page=${currentPage}&limit=${itemsPerPage}&sort=${sortConfig.key}&order=${sortConfig.direction}`
+        ADMINGRIEVANCE + `?page=${currentPage}&limit=${itemsPerPage}&sort=${sortConfig.key}&order=${sortConfig.direction}`
       )
       .then((response) => setComplaints(response.data))
       .catch((err) => console.log(err));

@@ -45,7 +45,7 @@ import layoutImage from "../Components/Assets/layout.jpg";
 
     setTimeout(async () => {
       try {
-        const response = await axios.post(`${LOGINEMPLOYEE}/api/auth/login`, formData);
+        const response = await axios.post(LOGINEMPLOYEE, formData);
         if (response.data.success) {
           const { accessToken } = response.data;
           sessionStorage.setItem("accessToken", accessToken);
@@ -56,7 +56,7 @@ import layoutImage from "../Components/Assets/layout.jpg";
           }, 2000);
         }
       } catch (error) {
-        setError(error.response.data.message || error.message);
+        setError(error.response?.data?.message || error.message);
         setTimeout(() => {
           setError(null);
         }, 2000);

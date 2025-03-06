@@ -39,7 +39,7 @@ const AdminCommunication = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await axios.get(`${ANNOUNCEMENT}/api/integration/hr4-announcement`);
+        const response = await axios.get(ANNOUNCEMENT);
         console.log("Fetched data from backend:", response.data);
 
         if (Array.isArray(response.data) && response.data.length > 0) {

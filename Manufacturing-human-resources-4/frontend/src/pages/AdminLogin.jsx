@@ -4,6 +4,10 @@ import { FaUser, FaLock } from "react-icons/fa";
 import layoutImage from "../Components/Assets/layout.jpg"; // Company Branding Image
 import axios from 'axios'; // Import axios
 
+const ADMINLOGIN = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/auth/testLog"
+  : "https://backend-hr4.jjm-manufacturing.com/api/auth/testLog";
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -17,7 +21,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fadeInForm, setFadeInForm] = useState(false);
   const [fadeInText, setFadeInText] = useState(false);
-  const APIBASED = "http://localhost:7688";
+  
 
   useEffect(() => {
     setTimeout(() => {
@@ -45,7 +49,7 @@ const AdminLogin = () => {
       console.log("Login Request Data:", formData);
   
       // Send login request to backend API
-      const response = await axios.post  (`${APIBASED}/api/auth/testLog`, formData);
+      const response = await axios.post  (`${ADMINLOGIN}/api/auth/testLog`, formData);
   
       // Log the response to check its content
       console.log("Backend Response:", response.data);

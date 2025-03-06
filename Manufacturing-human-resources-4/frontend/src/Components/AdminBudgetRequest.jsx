@@ -1,6 +1,10 @@
 import React, { useState, useCallback } from "react";
 import axios from "axios";
 
+const BUDGETREQUEST = process.env.NODE_ENV === "development"
+? "http://localhost:7688/api/budget-requests/request-budget"
+: "https://backend-hr4.jjm-manufacturing.com/api/budget-requests/request-budget";
+
 const AdminBudgetRequest = () => {
   const [budgetRequest, setBudgetRequest] = useState({
     department: "HR4",
@@ -88,7 +92,7 @@ const AdminBudgetRequest = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:7688/api/budget-requests/request-budget",
+        `${BUDGETREQUEST}/api/auth/login`,
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -197,7 +201,7 @@ const AdminBudgetRequest = () => {
         </div>
       </form>
     </div>
-  );q
+  );
 };
 
 export default AdminBudgetRequest;

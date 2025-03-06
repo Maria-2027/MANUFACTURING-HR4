@@ -6,6 +6,10 @@ import { Link } from "react-router-dom";
 import AdminBudgetRequest from "./AdminBudgetRequest";
 import AdminBudgetStatus from "./AdminBudgetStatus";
 
+const ADMINSUGGESTION = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/auth/employee-suggestions"
+  : "https://backend-hr4.jjm-manufacturing.com/api/auth/employee-suggestions";
+
 const AdminEmployeeSuggestion = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -19,7 +23,7 @@ const AdminEmployeeSuggestion = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:7688/api/auth/employee-suggestions")
+      .get(`${ADMINSUGGESTION}/api/auth/employee-suggestions`)
       .then((response) => {
         const sortedSuggestions = response.data.sort(
           (a, b) => new Date(b.dateSubmitted) - new Date(a.dateSubmitted)

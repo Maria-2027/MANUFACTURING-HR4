@@ -178,7 +178,7 @@ const AdminDashboard = () => {
           <h1 className={`text-4xl font-extrabold ${
             darkMode ? "text-white" : "text-gray-900"
           }`}>
-            {greeting}, {userName}
+            {greeting}, Admin
           </h1>
           <p className={`text-lg mt-2 ${
             darkMode ? "text-white" : "text-gray-700"

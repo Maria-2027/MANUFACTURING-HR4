@@ -3,11 +3,17 @@ import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOu
 import layout from "./Assets/layout.jpg";  
 import { Link } from "react-router-dom";  
 
+const EMPLOYEERECORDS = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/integration/get-time-tracking"
+  : "https://backend-hr4.jjm-manufacturing.com/api/integration/get-time-tracking";
+
 const AdminWorkflow = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [activeButton, setActiveButton] = useState(""); // Track active button
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("Workforce Analytics");
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [error, setError] = useState(null);      // Add error state
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -15,10 +21,28 @@ const AdminWorkflow = () => {
 
   useEffect(() => {
     if (activeButton === "Employee Records") {
-      fetch("http://localhost:5000/api/employees") // Adjust the API endpoint as needed
-        .then((response) => response.json())
-        .then((data) => setEmployees(data))
-        .catch((error) => console.error("Error fetching employee records:", error));
+        setLoading(true);
+        setError(null);
+
+        fetch(`${EMPLOYEERECORDS}/api/integration/get-time-tracking`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                setEmployees(data);
+                setError(null);
+            })
+            .catch((error) => {
+                console.error("Error fetching employee records:", error);
+                setError(`Error: ${error.message}`);
+                setEmployees([]);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }
   }, [activeButton]);
 
@@ -72,72 +96,61 @@ const AdminWorkflow = () => {
       </aside>
 
       <div className="flex-grow flex flex-col items-start justify-start p-8 space-y-4">
-        <button
-          onClick={() => setActiveButton("Employee Records")}
-          className={`p-4 rounded-lg shadow-md transition duration-200 ${activeButton === "Employee Records" ? buttonActiveClasses : "bg-gray-500 text-white"}`}
-        >
-          Employee Records
-        </button>
+        <div className="flex space-x-4"> 
+          <button
+            onClick={() => setActiveButton("Employee Records")}
+            className={`p-4 rounded-lg shadow-md transition duration-200 ${activeButton === "Employee Records" ? buttonActiveClasses : "bg-gray-500 text-white"}`}
+          >
+            Employee Records
+          </button>
 
-        <button
-          onClick={() => setActiveButton("Learning and Development")}
-          className={`p-4 rounded-lg shadow-md transition duration-200 ${activeButton === "Learning and Development" ? buttonActiveClasses : "bg-gray-500 text-white"}`}
-        >
-          Learning and Development
-        </button>
+          <button
+            onClick={() => setActiveButton("Learning and Development")}
+            className={`p-4 rounded-lg shadow-md transition duration-200 ${activeButton === "Learning and Development" ? buttonActiveClasses : "bg-gray-500 text-white"}`}
+          >
+            Learning and Development
+          </button>
+        </div>
 
-        {/* Flex container for side-by-side display */}
         <div className="flex space-x-8 w-full">
-          {/* Employee Records Section */}
           {activeButton === "Employee Records" && (
             <div className="flex-1 bg-gray-200 p-8 rounded-lg shadow-lg">
               <h3 className="text-2xl font-semibold mb-4">Employee Records</h3>
-              <table className="min-w-full table-auto bg-white rounded-lg shadow-md">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left">Employee ID</th>
-                    <th className="px-4 py-2 text-left">Name</th>
-                    <th className="px-4 py-2 text-left">Position</th>
-                    <th className="px-4 py-2 text-left">Department</th>
-                    <th className="px-4 py-2 text-left">Hire Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((employee) => (
-                    <tr key={employee.id} className="border-b">
-                      <td className="px-4 py-2">{employee.id}</td>
-                      <td className="px-4 py-2">{employee.name}</td>
-                      <td className="px-4 py-2">{employee.position}</td>
-                      <td className="px-4 py-2">{employee.department}</td>
-                      <td className="px-4 py-2">{employee.hireDate}</td>
+              {loading && <p>Loading...</p>}
+              {error && <p className="text-red-500">Error: {error}</p>}
+              {!loading && !error && (
+                <table className="min-w-full table-auto bg-white rounded-lg shadow-md">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">Employee ID</th>
+                      <th className="px-4 py-2 text-left">First Name</th>
+                      <th className="px-4 py-2 text-left">Last Name</th>
+                      <th className="px-4 py-2 text-left">Total Hours</th>
+                      <th className="px-4 py-2 text-left">Overtime Hours</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Approved At</th>
+                      <th className="px-4 py-2 text-left">Tardy Minutes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Learning and Development Section */}
-          {activeButton === "Learning and Development" && (
-            <div className="flex-1 bg-gray-200 p-8 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-semibold mb-4">Learning and Development</h3>
-              <p className="text-lg">This section will contain learning and development resources.</p>
+                  </thead>
+                  <tbody>
+                    {employees.map((employee, index) => (
+                      <tr key={employee.id || `employee-${index}`} className="border-b">
+                        <td className="px-4 py-2">{employee.employee_id}</td>
+                        <td className="px-4 py-2">{employee.employee_firstname}</td>
+                        <td className="px-4 py-2">{employee.employee_lastname}</td>
+                        <td className="px-4 py-2">{employee.total_hours}</td>
+                        <td className="px-4 py-2">{employee.overtime_hours}</td>
+                        <td className="px-4 py-2">{employee.status}</td>
+                        <td className="px-4 py-2">{employee.approved_at}</td>
+                        <td className="px-4 py-2">{employee.minutes_late}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>
-      </div>
-
-      <div className="absolute top-5 right-5">
-        <button
-          onClick={toggleDarkMode}
-          className="bg-gray-200 p-2 rounded-full shadow-lg transition duration-200 hover:bg-gray-300"
-        >
-          {darkMode ? (
-            <FaSun className="text-yellow-500 text-xl" />
-          ) : (
-            <FaMoon className="text-gray-800 text-xl" />
-          )}
-        </button>
       </div>
     </div>
   );

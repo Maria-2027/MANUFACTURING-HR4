@@ -11,8 +11,6 @@ const budgetRequestSchema = new mongoose.Schema(
     status: { 
       type: String, 
       required: true, 
-      default: "Pending",
-      enum: ["Pending", "Approved", "Rejected"], 
     },
     totalBudget: { type: Number, required: true }, 
     category: { type: String, required: true },

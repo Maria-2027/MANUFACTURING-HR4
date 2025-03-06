@@ -3,6 +3,11 @@ import { FaSearch, FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar
 import layout from "./Assets/layout.jpg"; // Logo image
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
+import AdminHr3Compensate from "./AdminHr3Compensate";
+
+const ADMINGRIEVANCE = process.env.NODE_ENV === "development"
+    ? "http://localhost:7688/EmComplaint"
+    : "https://backend-hr4.jjm-manufacturing.com/api/auth/employee-grievances";
 
 const AdminDashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -15,15 +20,18 @@ const AdminDashboard = () => {
 
   const navigate = useNavigate(); // Initialize useNavigate
 
+  const handleCompensationClick = () => {
+    navigate('/admin-compensate'); // Update this line to navigate to AdminHr3Compensate
+  };
+
   useEffect(() => {
-    // Fetch grievances from the backend API with pagination and sorting
     axios
       .get(
-        `http://localhost:7688/EmComplaint?page=${currentPage}&limit=${itemsPerPage}&sort=${sortConfig.key}&order=${sortConfig.direction}`
+        `${ADMINGRIEVANCE}/EmComplaint?page=${currentPage}&limit=${itemsPerPage}&sort=${sortConfig.key}&order=${sortConfig.direction}`
       )
       .then((response) => setComplaints(response.data))
       .catch((err) => console.log(err));
-  }, [currentPage, itemsPerPage, sortConfig]); // Run when page, itemsPerPage, or sortConfig changes
+  }, [currentPage, itemsPerPage, sortConfig]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -55,11 +63,9 @@ const AdminDashboard = () => {
     const complaintDescription = complaint.ComplaintDescription
       ? complaint.ComplaintDescription.toLowerCase()
       : "";
-
-    return (
-      complaintName.includes(searchTerm.toLowerCase()) ||
-      complaintDescription.includes(searchTerm.toLowerCase())
-    );
+    
+    return complaintName.includes(searchTerm.toLowerCase()) ||
+      complaintDescription.includes(searchTerm.toLowerCase());
   });
 
   // Sorting logic: Sorting by date first and then other fields if needed
@@ -84,6 +90,54 @@ const AdminDashboard = () => {
     e.preventDefault();
     console.log("Logo clicked");
     navigate("/admin-dashboard"); // Use navigate to go to admin-dashboard
+  };
+
+  const FileDisplay = ({ fileUrl }) => {
+    if (!fileUrl) return <span className="text-gray-500">No File</span>;
+  
+    const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png)$/i);
+    const isPDF = fileUrl.toLowerCase().includes('.pdf');
+  
+    if (isImage) {
+      return (
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:text-blue-700 underline flex items-center gap-2"
+        >
+          <img src={fileUrl} alt="Attachment" className="w-10 h-10 object-cover rounded" />
+          View Image
+        </a>
+      );
+    }
+  
+    if (isPDF) {
+      return (
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:text-blue-700 underline flex items-center gap-2"
+        >
+          <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 2a2 2 0 00-2 2v8l-3.146-3.146a.5.5 0 01.708-.708L8 11.793l3.438-3.437a.5.5 0 01.708.708L9 12.207V4a1 1 0 012 0v8.793l2.146-2.147a.5.5 0 01.708.708L10.707 14.5a1 1 0 01-1.414 0L6.146 11.354a.5.5 0 01.708-.708L9 13.293V4a2 2 0 00-2-2z"/>
+          </svg>
+          View PDF
+        </a>
+      );
+    }
+  
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 hover:text-blue-700 underline"
+      >
+        View File
+      </a>
+    );
   };
 
   return (
@@ -125,7 +179,7 @@ const AdminDashboard = () => {
                 className={`flex items-center space-x-3 text-base font-medium p-2 rounded-md cursor-pointer transition duration-200 ${
                   activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses
                 }`}
-                onClick={() => navigate(item.link)} // Dito na magre-redirect
+                onClick={() => navigate(item.link)}
               >
                 {item.icon}
                 <span>{item.title}</span>
@@ -151,15 +205,23 @@ const AdminDashboard = () => {
         <div className="mb-4">
           <h3 className="text-xl font-semibold">Employee Grievances</h3>
 
-          <div className="relative mb-6">
-            <input
-              type="text"
-              placeholder="Search Grievances"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full max-w-md p-4 pl-12 pr-4 bg-white border-2 border-gray-300 rounded-md text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl"
-            />
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="relative flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search Grievances"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-4 pl-12 pr-4 bg-white border-2 border-gray-300 rounded-md text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl"
+              />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+            <div 
+              onClick={handleCompensationClick}
+              className="ml-4 p-4 bg-blue-100 rounded-lg shadow-md hover:bg-blue-200 cursor-pointer transition-colors duration-200"
+            >
+              <span className="font-semibold text-blue-800">Active Content: Compensation & Sanctions</span>
+            </div>
           </div>
 
           <table className="min-w-full mt-6 table-auto border-collapse">
@@ -192,22 +254,7 @@ const AdminDashboard = () => {
                     <td className="py-2 px-4">{complaint.ComplaintDescription}</td>
                     <td className="py-2 px-4">{new Date(complaint.date).toLocaleDateString()}</td>
                     <td className="py-2 px-4">
-                      {complaint.File ? (
-                        <a
-                          href={`http://localhost:7688/uploads/${complaint.File}`} // Updated file path
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:text-blue-700 underline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(`http://localhost:7688/uploads/${complaint.File}`, "_blank");
-                          }}
-                        >
-                          View File
-                        </a>
-                      ) : (
-                        <span className="text-gray-500">No File</span>
-                      )}
+                      <FileDisplay fileUrl={complaint.File} />
                     </td>
                   </tr>
                 ))}

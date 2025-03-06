@@ -15,6 +15,8 @@ export const requestBudget = expressAsyncHandler(
       documents,
     });
 
+    console.log("Received category:", category); 
+
     // Set department to HR4 by default
     const department = "HR4";
 
@@ -98,3 +100,49 @@ export const updateBudgetRequest = async (req, res) => {
       res.status(500).json({ message: "Error updating budget request", error: error.message });
   }
 };
+
+export const updateBudgetRequestFinance = expressAsyncHandler(async (req, res) => {
+  try {
+    // Log received request data
+    console.log("Received Finance Update Data:", req.body);
+
+    // Extract required fields
+    const { approvalId, status, comment } = req.body;
+
+    // Validate input
+    if (!approvalId || !status) {
+      return res.status(400).json({ message: "Approval ID and status are required." });
+    }
+
+    // Find the existing budget request
+    const existingRequest = await BudgetRequest.findById(approvalId);
+
+    if (!existingRequest) {
+      return res.status(404).json({ message: "Budget request not found." });
+    }
+
+    // Update the fields
+    existingRequest.status = status;
+    if (comment) {
+      existingRequest.comment = comment;
+    }
+
+    // Save the updated request
+    const updatedRequest = await existingRequest.save();
+    
+    console.log("✅ Budget Request Updated:", updatedRequest);
+
+    // Send success response
+    res.status(200).json({ 
+      message: "Budget request updated successfully", 
+      data: updatedRequest 
+    });
+
+  } catch (error) {
+    console.error("❌ Error updating budget request:", error);
+    res.status(500).json({ 
+      message: "Error updating budget request", 
+      error: error.message 
+    });
+  }
+});

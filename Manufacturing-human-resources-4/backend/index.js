@@ -3,17 +3,19 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import bcrypt from "bcryptjs";
-import { connectDB } from "./config/db.js";
-import userRoutes from "./routes/userRoute.js";
-import suggestionRoute from './routes/suggestionRoute.js';
-import ComplaintUser from "./models/ComplaintUser.js";
-import Suggestion from "./models/Suggestion.js";
+import { connectDB } from "./config/db.js";             // Fixed path
+import userRoutes from "./routes/userRoute.js";         // Fixed path
+import suggestionRoute from './routes/suggestionRoute.js'; // Fixed path
+import ComplaintUser from "./models/ComplaintUser.js";  // Fixed path
+import Suggestion from "./models/Suggestion.js";        // Fixed path
 import multer from "multer";  // Import multer for file handling
 import path from "path";  // For handling file paths
-import Complaint from "./routes/Complaint.js";
-import messageRoutes from './routes/messageRoutes.js';
+import Complaint from "./routes/Complaint.js";          // Fixed path
+import messageRoutes from './routes/messageRoutes.js';  // Fixed path
 import cloudinary from "cloudinary";
-import budgetRequestRoute from "./routes/budgetRequests.js";
+import budgetRequestRoute from "./routes/budgetRequests.js"; // Fixed path
+import integrationRoutes from "./routes/integrationRoutes.js"; // Fixed path
+
 dotenv.config();
 const app = express();
 cloudinary.config({
@@ -24,9 +26,15 @@ cloudinary.config({
 
 
 // ✅ Middleware should be declared before defining routes
-app.use(cors());
 app.use(cookieParser());
-app.use(express.json()); // Ensure JSON parsing
+app.use(express.json());
+app.use(cors({
+  origin: process.env.NODE_ENV === "production"
+    ? "https://hr4.jjm-manufacturing.com"
+    : "http://localhost:5173",
+  credentials: true,
+}));
+app.use(express.urlencoded({ extended: true })); // Ensure JSON parsing
 
 // Set up multer storage configuration
 const storage = multer.memoryStorage(); // Save files in memory
@@ -67,11 +75,13 @@ app.get("/api/auth",  (req, res) => {
   .catch((err) => res.json(err));
   });
 
-app.get("/EmComplaint", (req, res) => {
+app.get("/EmComplaint", async (req, res) => {
   ComplaintUser.find()
     .then((complaints) => res.json(complaints))
     .catch((err) => res.json(err));
 });
+
+app.use("/api/integration", integrationRoutes);
 
 
 // Start server

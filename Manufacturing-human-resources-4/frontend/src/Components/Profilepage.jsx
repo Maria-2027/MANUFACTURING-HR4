@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const PROFILE = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:7688/api/auth/profile'
+  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/profile';
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const token = sessionStorage.getItem('accessToken');
@@ -27,7 +31,7 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/auth/profile');
+      const response = await api.get(`${PROFILE}/api/auth/profile`);
       if (response.data && response.data.success) {
         setUser(response.data.data);
       }

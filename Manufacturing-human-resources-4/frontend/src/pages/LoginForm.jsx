@@ -5,6 +5,10 @@ import { FaUser, FaLock } from "react-icons/fa";
 import layoutImage from "../Components/Assets/layout.jpg";
  // Import your image
 
+ const LOGINEMPLOYEE = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/auth/login"
+  : "https://backend-hr4.jjm-manufacturing.com/api/auth/login";
+
 
  const Login = () => {
   const navigate = useNavigate();
@@ -41,7 +45,7 @@ import layoutImage from "../Components/Assets/layout.jpg";
 
     setTimeout(async () => {
       try {
-        const response = await axios.post("http://localhost:7688/api/auth/login", formData);
+        const response = await axios.post(`${LOGINEMPLOYEE}/api/auth/login`, formData);
         if (response.data.success) {
           const { accessToken } = response.data;
           sessionStorage.setItem("accessToken", accessToken);

@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const REGISTER = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/auth/signup"
+  : "https://backend-hr4.jjm-manufacturing.com/api/auth/signup";
+
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -29,7 +33,7 @@ const Register = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:7688/api/auth/signup",
+        `${REGISTER}/api/auth/signup`,
         formData
       );
       setMessage(response.data.message);

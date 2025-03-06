@@ -22,13 +22,14 @@ import AdminGrievance from "./Components/AdminGrievance";
 import AdminEmployeeSuggestion from "./Components/AdminEmployeeSuggestion";
 import AdminCommunication from "./Components/AdminCommunication";
 import AdminWorkflow from "./Components/AdminWorkflow";
+import AdminHr3 from "./Components/AdminHr3Compensate";
 
 const App = () => {
   const location = useLocation();
 
   const hideSidebarAndSearchBar = location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/ForgotPassword" 
   || location.pathname === "/account" || location.pathname === "/admin" || location.pathname === "/admin-dashboard" || location.pathname === "/admin-grievance"
-  || location.pathname === "/admin-employee-suggestion" || location.pathname === "/admin-communication" || location.pathname === "/admin-workflow";
+  || location.pathname === "/admin-employee-suggestion" || location.pathname === "/admin-communication" || location.pathname === "/admin-workflow" || location.pathname === "/admin-compensate";
 
   return (
     <div className="flex min-h-screen">
@@ -59,6 +60,7 @@ const App = () => {
           <Route path="/admin-employee-suggestion" element={<AdminEmployeeSuggestion />} />
           <Route path="/admin-communication" element={<AdminCommunication />} />
           <Route path="/admin-workflow" element={<AdminWorkflow />} />
+          <Route path="/admin-compensate" element={<AdminHr3 />} />
         </Routes>
       </div>
     </div>

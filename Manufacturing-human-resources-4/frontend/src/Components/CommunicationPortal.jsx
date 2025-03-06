@@ -1,87 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import websocketService from '../services/websocket';
+import axios from 'axios';
+import { FaBullhorn, FaTimes } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const EmployeeChatBox = () => {
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [userId] = useState(() => `employee-${Math.random().toString(36).substr(2, 9)}`);
+const ADMINANNOUNCE = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/integration/hr4-announcement"
+  : "https://backend-hr4.jjm-manufacturing.com/api/integration/hr4-announcement";
+const Announcements = () => {
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
   useEffect(() => {
-    // Connect to WebSocket
-    websocketService.connect();
-
-    // Subscribe to messages
-    const unsubscribe = websocketService.subscribe((newMessage) => {
-      setMessages(prevMessages => [...prevMessages, newMessage]);
-    });
-
-    // Fetch existing messages
-    const fetchMessages = async () => {
+    const fetchAnnouncements = async () => {
       try {
-        const response = await fetch('/api/messages');
-        const data = await response.json();
-        setMessages(data);
+        const response = await axios.get(`${ADMINANNOUNCE}/api/integration/hr4-announcement`);
+        setAnnouncements(response.data);
       } catch (error) {
-        console.error('Error fetching messages:', error);
+        console.error('Error fetching announcements:', error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchMessages();
-    return () => unsubscribe();
+    fetchAnnouncements();
   }, []);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
+  const timeAgo = (timestamp) => {
+    const now = new Date();
+    const postDate = new Date(timestamp);
+    const diffInMs = now - postDate;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    const newMessage = {
-      text: message,
-      sender: 'Employee',
-      userId: userId,
-      timestamp: new Date().toISOString()
-    };
-
-    websocketService.sendMessage(newMessage);
-    setMessage('');
+    if (diffInDays > 0) return `${diffInDays} day(s) ago`;
+    if (diffInHours > 0) return `${diffInHours} hour(s) ago`;
+    if (diffInMinutes > 0) return `${diffInMinutes} minute(s) ago`;
+    return 'Just now';
   };
 
   return (
-    <div className="flex flex-col w-full max-w-lg mx-auto bg-white rounded-lg shadow-xl p-4">
-      <div className="mb-3">
-        <h1 className="text-xl font-semibold text-center text-gray-800">Employee ChatBox</h1>
-      </div>
+    <div className="max-w-5xl mx-auto p-6 bg-white shadow-lg rounded-lg">
+      <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-6">
+        <FaBullhorn className="text-yellow-500 mr-2" /> Announcements
+      </h2>
 
-      {/* Chat Messages Section */}
-      <div className="flex flex-col space-y-3 overflow-y-auto max-h-80 p-3 bg-gray-50 rounded-lg shadow-inner">
-        {messages.map((msg, index) => (
-          <div key={index} className={`flex items-start ${msg.sender === 'Admin' ? 'justify-start' : 'justify-end'}`}>
-            <div
-              className={`px-4 py-2 rounded-lg max-w-xs ${msg.sender === 'Admin' ? 'bg-blue-100 text-gray-800' : 'bg-blue-500 text-white'}`}
-            >
-              <p className="text-sm">{msg.text}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Message Input Section */}
-      <form onSubmit={handleSendMessage} className="flex items-center mt-4 space-x-3">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="flex-grow p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="Type your message..."
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
+        </div>
+      ) : announcements.length > 0 ? (
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          Send
-        </button>
-      </form>
+          {announcements.map((announcement, index) => (
+            <motion.div
+              key={index}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="p-4 bg-gray-50 shadow-md rounded-lg cursor-pointer hover:shadow-lg transition"
+              onClick={() => setSelectedAnnouncement(announcement)}
+            >
+              <h3 className="font-semibold text-lg text-gray-900">{announcement.title}</h3>
+              <p className="text-sm text-gray-600 mt-1 truncate">{announcement.content}</p>
+              <p className="text-xs text-gray-500 mt-1">{timeAgo(announcement.createdAt)}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      ) : (
+        <p className="text-gray-500 text-center">No announcements available.</p>
+      )}
+
+      {/* Announcement Modal */}
+      <AnimatePresence>
+        {selectedAnnouncement && (
+          <motion.div
+            className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedAnnouncement(null)}
+          >
+            <motion.div
+              className="bg-white p-6 rounded-lg shadow-lg max-w-md relative"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="absolute top-3 right-3 text-gray-600" onClick={() => setSelectedAnnouncement(null)}>
+                <FaTimes className="text-lg" />
+              </button>
+              <h3 className="text-2xl font-semibold mb-4 text-gray-900">{selectedAnnouncement.title}</h3>
+              <p className="text-sm text-gray-600">{selectedAnnouncement.content}</p>
+              <p className="text-xs text-gray-500 mt-2">{timeAgo(selectedAnnouncement.createdAt)}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default EmployeeChatBox;
+export default Announcements;

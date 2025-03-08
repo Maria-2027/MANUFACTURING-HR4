@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const budgetRequestSchema = new mongoose.Schema(
   {
-    requestId: { type: String },
+    approvalId: { type: String },
     department: { 
       type: String, 
       required: true,

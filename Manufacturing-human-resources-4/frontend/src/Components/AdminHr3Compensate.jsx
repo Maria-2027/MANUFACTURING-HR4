@@ -5,12 +5,12 @@ import layout from "./Assets/layout.jpg";
 import { Link } from "react-router-dom";
 
 const ADMINHR3 = process.env.NODE_ENV === "development"
-    ? "http://localhost:7688/api/auth/employee-violation"
-    : "https://backend-hr4.jjm-manufacturing.com/api/auth/employee-violation";
+    ? "http://localhost:7688/api/integration/get-employee-violation"
+    : "https://backend-hr4.jjm-manufacturing.com/api/integration/get-employee-violation";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState();
-  const [data, setData] = useState([]);
+  const [data, setData] = useState([]); // Initialize as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,20 +20,26 @@ const AdminDashboard = () => {
         setLoading(true);
         const response = await axios.get(ADMINHR3, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}` // If you're using token authentication
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        setData(response.data);
+        
+        console.log("API Response:", response.data); // Debugging line
+        
+        setData(Array.isArray(response.data.employeeViolations) ? response.data.employeeViolations : []);
         setError(null);
       } catch (err) {
+        console.error("Error fetching data:", err);
         setError('Error fetching data: ' + err.message);
+        setData([]);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchData();
-  }, []); // Empty dependency array means this runs once on component mount
+  }, []);
+  ; // Empty dependency array means this runs once on component mount
 
   const handleLogout = () => {
     console.log("Logged out");
@@ -120,10 +126,49 @@ const AdminDashboard = () => {
           <div className="flex justify-center items-center h-full">Loading...</div>
         ) : error ? (
           <div className="text-red-500 p-4">{error}</div>
+        ) : data.length === 0 ? (
+          <div className="text-center p-4">No violations found</div>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-2xl font-bold mb-4">Dashboard Content</h1>
-            {/* Add your main content here */}
+            <h1 className="text-2xl font-bold mb-4">Employee Violations</h1>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="px-4 py-2">Employee Name</th>
+                    <th className="px-4 py-2">Violation Type</th>
+                    <th className="px-4 py-2">Penalty Level</th>
+                    <th className="px-4 py-2">Action</th>
+                    <th className="px-4 py-2">Date</th>
+                    <th className="px-4 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((violation) => (
+                    <tr key={violation._id} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-2">
+                        {violation.userId.firstName} {violation.userId.lastName}
+                      </td>
+                      <td className="px-4 py-2">{violation.penaltyLevel.violationType}</td>
+                      <td className="px-4 py-2">{violation.penaltyLevel.penaltyLevel}</td>
+                      <td className="px-4 py-2">{violation.penaltyLevel.action}</td>
+                      <td className="px-4 py-2">
+                        {new Date(violation.violationDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className={`px-2 py-1 rounded-full text-sm ${
+                          violation.status === 'active' ? 'bg-red-100 text-red-800' : 
+                          violation.status === 'resolved' ? 'bg-green-100 text-green-800' : 
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {violation.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>

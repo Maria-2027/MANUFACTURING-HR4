@@ -68,40 +68,40 @@ export const requestBudget = expressAsyncHandler(
   }
 );
 
-export const updateBudgetRequest = async (req, res) => {
-  try {
-      const { approvalId, status, comment } = req.body;
-      console.log("Received Update Data:", req.body);
+// export const updateBudgetRequest = async (req, res) => {
+//   try {
+//       const { approvalId, status, comment } = req.body;
+//       console.log("Received Update Data:", req.body);
 
-      if (!approvalId || !status) {
-          return res.status(400).json({ message: "Approval ID and status are required." });
-      }
+//       if (!approvalId || !status) {
+//           return res.status(400).json({ message: "Approval ID and status are required." });
+//       }
 
-      let existingRequest = await BudgetRequest.findById(approvalId);
+//       let existingRequest = await BudgetRequest.findById(approvalId);
 
-      if (!existingRequest) {
-          return res.status(404).json({ message: "Budget request not found." });
-      }
+//       if (!existingRequest) {
+//           return res.status(404).json({ message: "Budget request not found." });
+//       }
 
-      // Update fields
-      existingRequest.status = status;
-      if (comment) {
-          existingRequest.comment = comment;
-      }
+//       // Update fields
+//       existingRequest.status = status;
+//       if (comment) {
+//           existingRequest.comment = comment;
+//       }
 
-      const updatedRequest = await existingRequest.save();
+//       const updatedRequest = await existingRequest.save();
 
-      console.log("Updated Budget Request:", updatedRequest);
+//       console.log("Updated Budget Request:", updatedRequest);
 
-      res.status(200).json({ message: "Budget request updated successfully", updatedRequest });
+//       res.status(200).json({ message: "Budget request updated successfully", updatedRequest });
 
-  } catch (error) {
-      console.error("Error updating budget request:", error);
-      res.status(500).json({ message: "Error updating budget request", error: error.message });
-  }
-};
+//   } catch (error) {
+//       console.error("Error updating budget request:", error);
+//       res.status(500).json({ message: "Error updating budget request", error: error.message });
+//   }
+// };
 
-export const updateBudgetRequestFinance = expressAsyncHandler(async (req, res) => {
+export const updateBudgetRequest = expressAsyncHandler(async (req, res) => {
   try {
     // Log received request data
     console.log("Received Finance Update Data:", req.body);
@@ -144,5 +144,14 @@ export const updateBudgetRequestFinance = expressAsyncHandler(async (req, res) =
       message: "Error updating budget request", 
       error: error.message 
     });
+  }
+});
+
+export const getAllBudgetRequests = expressAsyncHandler(async (req, res) => {
+  try {
+    const budgetRequests = await BudgetRequest.find();
+    res.status(200).json({ success: true, data: budgetRequests });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching budget requests", error: error.message });
   }
 });

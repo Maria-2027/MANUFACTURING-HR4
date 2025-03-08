@@ -7,7 +7,7 @@ import AdminHr3Compensate from "./AdminHr3Compensate";
 
 const ADMINGRIEVANCE = process.env.NODE_ENV === "development"
     ? "http://localhost:7688/EmComplaint"
-    : "https://backend-hr4.jjm-manufacturing.com/api/auth/employee-grievances";
+    : "https://backend-hr4.jjm-manufacturing.com/Emcomplaint";
 
 const AdminDashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -26,10 +26,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     axios
-      .get(
-        ADMINGRIEVANCE + `?page=${currentPage}&limit=${itemsPerPage}&sort=${sortConfig.key}&order=${sortConfig.direction}`
-      )
-      .then((response) => setComplaints(response.data))
+      .get(ADMINGRIEVANCE)
+      .then((response) => {
+        console.log('API Response:', response.data); // For debugging
+        setComplaints(response.data);
+      })
       .catch((err) => console.log(err));
   }, [currentPage, itemsPerPage, sortConfig]);
 
@@ -59,13 +60,15 @@ const AdminDashboard = () => {
 
   // Search filtering
   const filteredComplaints = complaints.filter((complaint) => {
-    const complaintName = complaint.FullName ? complaint.FullName.toLowerCase() : "";
-    const complaintDescription = complaint.ComplaintDescription
-      ? complaint.ComplaintDescription.toLowerCase()
-      : "";
+    const firstName = complaint.employee?.firstName || complaint.firstName || "";
+    const lastName = complaint.employee?.lastName || complaint.lastName || "";
+    const complaintDescription = complaint.ComplaintDescription || "";
     
-    return complaintName.includes(searchTerm.toLowerCase()) ||
-      complaintDescription.includes(searchTerm.toLowerCase());
+    return (
+      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaintDescription.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
   // Sorting logic: Sorting by date first and then other fields if needed
@@ -75,8 +78,7 @@ const AdminDashboard = () => {
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
       return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-    } else {
-      // For other fields like "FullName" and "ComplaintDescription"
+    } else if (sortConfig.key === "firstName" || sortConfig.key === "lastName") {
       if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
       if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
@@ -227,9 +229,13 @@ const AdminDashboard = () => {
           <table className="min-w-full mt-6 table-auto border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("FullName")}>
-                  Full Name
-                  {sortConfig.key === "FullName" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("firstName")}>
+                  First Name
+                  {sortConfig.key === "firstName" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                </th>
+                <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("lastName")}>
+                  Last Name
+                  {sortConfig.key === "lastName" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                 </th>
                 <th
                   className="py-2 px-4 text-left cursor-pointer"
@@ -250,9 +256,16 @@ const AdminDashboard = () => {
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((complaint, index) => (
                   <tr key={index} className="border-b">
-                    <td className="py-2 px-4">{complaint.FullName}</td>
-                    <td className="py-2 px-4">{complaint.ComplaintDescription}</td>
-                    <td className="py-2 px-4">{new Date(complaint.date).toLocaleDateString()}</td>
+                    <td className="py-2 px-4">
+                      {complaint.firstName || 'N/A'}
+                    </td>
+                    <td className="py-2 px-4">
+                      {complaint.lastName || 'N/A'}
+                    </td>
+                    <td className="py-2 px-4">{complaint.ComplaintDescription || 'N/A'}</td>
+                    <td className="py-2 px-4">
+                      {complaint.date ? new Date(complaint.date).toLocaleDateString() : 'N/A'}
+                    </td>
                     <td className="py-2 px-4">
                       <FileDisplay fileUrl={complaint.File} />
                     </td>

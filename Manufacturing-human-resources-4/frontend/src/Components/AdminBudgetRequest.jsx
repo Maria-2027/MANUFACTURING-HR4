@@ -16,6 +16,9 @@ const AdminBudgetRequest = () => {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -38,52 +41,59 @@ const AdminBudgetRequest = () => {
   }, []);
 
   const uploadFileToCloudinary = async (file) => {
+    // Validate file type and size
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Only PDF and Word documents are allowed');
+    }
+
+    if (file.size > maxSize) {
+      throw new Error('File size must be less than 10MB');
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "Hr4_BudgetRequest");
-    formData.append("resource_type", "raw");
+    formData.append('file', file);
+    formData.append('upload_preset', 'Hr4_BudgetRequest'); // Make sure this matches your Cloudinary upload preset
+    formData.append('cloud_name', 'dhawghlsr');
 
     try {
       const response = await axios.post(
-        "https://api.cloudinary.com/v1_1/dhawghlsr/upload",
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        'https://api.cloudinary.com/v1_1/dhawghlsr/raw/upload', // Changed to raw upload for documents
+        formData
       );
-      
-      console.log("Cloudinary response:", response.data);
-      
+
       if (!response.data || !response.data.secure_url) {
-        throw new Error("Invalid response from Cloudinary");
+        throw new Error('Upload failed - no URL received');
       }
-      
+
       return response.data.secure_url;
     } catch (error) {
-      console.error("Cloudinary upload error:", error.response?.data || error);
-      throw new Error(
-        error.response?.data?.error?.message || 
-        "Failed to upload file. Please try again."
-      );
+      console.error('Cloudinary upload error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.error?.message || 'File upload failed. Please try again.');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!selectedFile) {
-      alert("Please select a PDF file to upload");
-      return;
-    }
+    setIsSubmitting(true);
+    setError('');
+    setLoading(true);
 
     try {
-      setLoading(true);
-      
-      // Upload file first
-      const documentUrl = await uploadFileToCloudinary(selectedFile);
-      
+      let documentUrl = '';
+      if (selectedFile) {
+        try {
+          documentUrl = await uploadFileToCloudinary(selectedFile);
+        } catch (uploadError) {
+          setError(uploadError.message);
+          setIsSubmitting(false);
+          setLoading(false);
+          return;
+        }
+      }
+
       const payload = {
         totalBudget: budgetRequest.totalBudget,
         category: budgetRequest.category,
@@ -97,8 +107,10 @@ const AdminBudgetRequest = () => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      alert("Budget Request Submitted Successfully");
-      console.log("Response:", response.data);
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 3000);
       
       // Reset form
       setBudgetRequest({
@@ -113,14 +125,20 @@ const AdminBudgetRequest = () => {
       
     } catch (error) {
       console.error("Error:", error);
-      alert(`Error: ${error.message}`);
+      setError(error.message);
     } finally {
+      setIsSubmitting(false);
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
+    <div className="bg-white shadow-md rounded-lg p-6 relative">
+      {showNotification && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg">
+          Budget Request Submitted Successfully!
+        </div>
+      )}
       <h2 className="text-2xl font-semibold mb-6">Submit Budget Request</h2>
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
@@ -186,17 +204,27 @@ const AdminBudgetRequest = () => {
               type="file"
               id="documents"
               name="documents"
-              accept=".pdf"
+              accept=".pdf,.doc,.docx"
               onChange={handleFileChange}
               className="p-3 border border-gray-300 rounded-md"
             />
           </div>
           <button
             type="submit"
-            className="w-full py-3 mt-6 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="w-full py-3 mt-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center"
             disabled={loading}
           >
-            {loading ? "Submitting..." : "Submit Request"}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting...
+              </>
+            ) : (
+              "Submit Request"
+            )}
           </button>
         </div>
       </form>

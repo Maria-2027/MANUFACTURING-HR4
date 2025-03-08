@@ -1,182 +1,203 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaMoneyBillWave, FaSearch } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 
-const BUDGETSTATUS = process.env.NODE_ENV === "development"
-    ? "http://localhost:7688/api/budget-requests/updateStatusFinance"
-    : "https://backend-hr4.jjm-manufacturing.com/api/budget-requests/updateStatusFinance";
+const BUDGETREQUESTS_API = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/budget-requests/get-all"
+  : "https://backend-hr4.jjm-manufacturing.com/api/budget-requests/get-all";
 
-const AdminBudgetStatus = () => {
+const BudgetRequestsList = () => {
   const [budgetRequests, setBudgetRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');  // Changed to single search term
+  const [currentPage, setCurrentPage] = useState(1  );
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const itemsPerPage = 7;
+
+  const fetchBudgetRequests = async () => {
+    try {
+      const response = await axios.get(BUDGETREQUESTS_API);
+      if (response.data.success) {
+        console.log('Budget Requests Data:', response.data.data); // Add this line for debugging
+        setBudgetRequests(response.data.data);
+      } else {
+        setError(response.data.message || 'Failed to fetch budget requests');
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || error.message || 'Failed to fetch budget requests');
+      console.error('Error fetching budget requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchBudgetRequests();
   }, []);
 
-  const fetchBudgetRequests = async () => {
-    try {
-        const token = sessionStorage.getItem('accessToken');
-        const response = await axios.post(
-          BUDGETSTATUS,
-          {}, // empty body
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-        if (response.data) setBudgetRequests(response.data);
-        setLoading(false);
-    } catch (err) {
-        setError(err.response?.data?.message || "Failed to fetch budget requests");
-        setLoading(false);
-    }
-};
+  const filteredResults = budgetRequests.filter((request) => {
+    const searchStr = searchTerm.toLowerCase();
+    return (
+      formatDate(request.createdAt).toLowerCase().includes(searchStr) ||
+      request.comment?.toLowerCase().includes(searchStr) ||
+      request.reason?.toLowerCase().includes(searchStr) ||
+      request.status?.toLowerCase().includes(searchStr) ||
+      request.totalBudget?.toString().toLowerCase().includes(searchStr)
+    );
+  });
 
-const updateBudgetStatus = async (approvalId, newStatus) => {
-    // Validate required fields
-    if (!approvalId || !newStatus) {
-        alert("Approval ID and status are required");
-        return;
-    }
+  const handleSort = (field) => {
+    if (field !== 'createdAt') return; // Only allow sorting for createdAt
 
-    try {
-        const token = sessionStorage.getItem('accessToken');
-        const response = await axios.post(
-            `${BUDGETSTATUS}/api/budget-requests/updateStatusFinance`,
-            { approvalId, status: newStatus },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+    const newDirection = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortField(field);
+    setSortDirection(newDirection);
 
-        if (response.data.message === "Budget request updated successfully") {
-            fetchBudgetRequests(); // Refresh list after update
-            alert(`Budget request ${newStatus.toLowerCase()} successfully`);
-        }
-    } catch (err) {
-        console.error("Update Budget Error:", err);
-        alert(err.response?.data?.message || `Failed to ${newStatus.toLowerCase()} budget request`);
-    }
-};
+    const sortedData = [...budgetRequests].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return newDirection === 'asc' ? dateA - dateB : dateB - dateA;
+    });
 
-  // Enhanced filter function to search by approval ID
-  const filteredBudgetRequests = budgetRequests.filter(request =>
-    request._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.status.toLowerCase().includes(searchQuery.toLowerCase())
+    setBudgetRequests(sortedData);
+  };
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = (filteredResults.length > 0 ? filteredResults : budgetRequests).slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(
+    (filteredResults.length > 0 ? filteredResults : budgetRequests).length / itemsPerPage
   );
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  const renderSortIcon = (field) => {
+    if (field !== 'createdAt') return null; // Only show sort icon for createdAt
+    if (sortField !== field) return '↕️';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="p-6">
-      {/* Enhanced Search Section */}
-      <div className="flex flex-col gap-4 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <FaMoneyBillWave className="text-3xl text-green-600 mr-3" />
-            <h1 className="text-3xl font-bold">Budget Status Dashboard</h1>
-          </div>
-          
-          {/* Prominent Search Bar */}
-          <div className="w-1/3 min-w-[300px]">
-            <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by Approval ID or Status..."
-                className="w-full pl-12 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
+    <div className="bg-white shadow-md rounded-lg p-6">
+      <h2 className="text-2xl font-semibold mb-6">Budget Requests</h2>
+
+      {error && <div className="bg-red-500 text-white px-6 py-3 rounded-lg mb-4">{error}</div>}
+
+      <div className="relative flex-1 max-w-md mb-6">
+        <input
+          type="text"
+          placeholder="Search budget requests..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-4 pl-12 pr-4 bg-white border-2 border-gray-300 rounded-md text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl"
+        />
+        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>
 
-      {/* Rest of the table */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Approval ID
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto">
+          <thead>
+            <tr className="bg-gray-100">
+              {['createdAt', 'totalBudget', 'reason', 'comment', 'documents', 'status'].map((field) => (
+                <th 
+                  key={field}
+                  onClick={() => handleSort(field)}
+                  className={`px-6 py-3 border ${field === 'createdAt' ? 'cursor-pointer hover:bg-gray-200' : 'cursor-default'} transition-colors`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="capitalize">{field === 'createdAt' ? 'Date Created' : field.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    {renderSortIcon(field) && <span className="ml-2">{renderSortIcon(field)}</span>}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount Requested
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Purpose
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBudgetRequests.map((request) => (
-                <tr key={request._id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                    {request._id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{request.department}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">₱{request.amount.toLocaleString()}</td>
-                  <td className="px-6 py-4">{request.purpose}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${request.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                      request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'}`}>
-                      {request.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => updateBudgetStatus(request._id, 'Approved')}
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => updateBudgetStatus(request._id, 'Rejected')}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
-                </tr>
               ))}
-              {filteredBudgetRequests.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No budget requests found matching the search criteria
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {currentItems.map((request) => (
+              <tr key={request._id} className="hover:bg-gray-50">
+                <td className="px-6 py-3 border max-w-[180px]">
+                  {formatDate(request.createdAt)}
+                </td>
+                <td className="px-6 py-3 border max-w-[150px]">
+                  {typeof request.totalBudget === 'number' ? request.totalBudget.toLocaleString() : request.totalBudget}
+                </td>
+                <td className="px-6 py-3 border max-w-[250px] group relative">
+                  <div className="truncate" title={request.reason}>
+                    {request.reason}
+                  </div>
+                  <div className="hidden group-hover:block absolute z-10 bg-gray-800 text-white p-2 rounded-lg shadow-lg -mt-1 left-0 max-w-md">
+                    {request.reason}
+                  </div>
+                </td>
+                <td className="px-6 py-3 border max-w-[250px] group relative">
+                  <div className="truncate" title={request.comment}>
+                    {request.comment}
+                  </div>
+                  <div className="hidden group-hover:block absolute z-10 bg-gray-800 text-white p-2 rounded-lg shadow-lg -mt-1 left-0 max-w-md">
+                    {request.comment}
+                  </div>
+                </td>
+                <td className="px-6 py-3 border">
+                  <a 
+                    href={request.documents} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    View Document
+                  </a>
+                </td>
+                <td className="px-6 py-3 border max-w-[150px]">
+                  <div className="truncate" title={request.status}>
+                    {request.status}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4 flex justify-center gap-2">
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span className="px-3 py-1">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 };
 
-export default AdminBudgetStatus;
+export default BudgetRequestsList;

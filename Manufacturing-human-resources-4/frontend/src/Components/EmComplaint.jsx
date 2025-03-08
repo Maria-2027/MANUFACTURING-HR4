@@ -1,26 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const EMCOMPLAINT = process.env.NODE_ENV === "development"
   ? "http://localhost:7688/api/auth/EmComplaint"
   : "https://backend-hr4.jjm-manufacturing.com/api/auth/EmComplaint";
 
-const EmComplaint = ({ user }) => {
-  const [firstName, setFirstName] = useState(user?.firstname || "");
-  const [lastName, setLastName] = useState(user?.lastname || "");
+const PROFILE = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:7688/api/auth/profile'
+  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/profile';
+
+const EmComplaint = () => {  // Removed user prop
+  const navigate = useNavigate();
+  const token = sessionStorage.getItem('accessToken');
+  const api = axios.create({
+    baseURL: 'http://localhost:7688',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [complaint, setComplaint] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [notification, setNotification] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
+  const fetchProfile = async () => {
+    try {
+      const response = await api.get(PROFILE);
+      if (response.data && response.data.success) {
+        setFirstName(response.data.data.firstname);
+        setLastName(response.data.data.lastname);
+      }
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []); // Empty dependency array means this runs once on mount
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file type
+      if (file.type !== 'application/pdf') {
+        alert('Only PDF files are allowed');
+        e.target.value = '';
+        setAttachment(null);
+        return;
+      }
       // Check file size (limit to 10MB)
       if (file.size > 10 * 1024 * 1024) {
         alert('File size must be less than 10MB');
         e.target.value = '';
+        setAttachment(null);
         return;
       }
       setAttachment(file);
@@ -60,6 +99,16 @@ const EmComplaint = ({ user }) => {
     setIsError(false);
     setShowSuccess(false);
 
+    if (!attachment) {
+      setIsError(true);
+      setNotification("Please attach a PDF file before submitting.");
+      setTimeout(() => {
+        setNotification("");
+        setIsError(false);
+      }, 3000);
+      return;
+    }
+
     try {
       let attachmentUrl = null;
       if (attachment) {
@@ -67,10 +116,11 @@ const EmComplaint = ({ user }) => {
       }
 
       const formData = {
-        FirstName: firstName,
-        LastName: lastName,
+        firstName: firstName,  // Changed from FirstName
+        lastName: lastName,    // Changed from LastName
         ComplaintDescription: complaint,
-        File: attachmentUrl
+        File: attachmentUrl,
+        date: new Date().toISOString() // Adding date field
       };
 
       const response = await axios.post(
@@ -162,26 +212,16 @@ const EmComplaint = ({ user }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-lg font-medium text-gray-700 mb-2">First Name</label>
-              <input
-                type="text"
-                placeholder="Enter your first name"
-                className="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
+              <div className="w-full p-4 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-700">
+                {firstName}
+              </div>
             </div>
 
             <div>
               <label className="block text-lg font-medium text-gray-700 mb-2">Last Name</label>
-              <input
-                type="text"
-                placeholder="Enter your last name"
-                className="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
+              <div className="w-full p-4 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-700">
+                {lastName}
+              </div>
             </div>
 
             <div>
@@ -197,19 +237,27 @@ const EmComplaint = ({ user }) => {
             </div>
 
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-2">Attachment</label>
+              <label className="block text-lg font-medium text-gray-700 mb-2">
+                Attachment (Required) <span className="text-red-500">*</span>
+              </label>
               <input
                 type="file"
                 onChange={handleFileChange}
                 className="w-full border-2 border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
-                accept="image/*,.pdf,.doc,.docx,.txt" // Add accepted file types
+                accept=".pdf"
+                required
               />
-              <small className="text-gray-500">Max file size: 10MB. Supported formats: Images, PDF, DOC, DOCX, TXT</small>
+              <small className="text-gray-500">Required: PDF file only. Max file size: 10MB.</small>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-red-500 text-white py-4 rounded-xl hover:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-500 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+              disabled={!attachment}
+              className={`w-full py-4 rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg ${
+                !attachment 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-red-500 hover:bg-red-600 text-white focus:outline-none focus:ring-4 focus:ring-red-500'
+              }`}
             >
               Submit Complaint
             </button>

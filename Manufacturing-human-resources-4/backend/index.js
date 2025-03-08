@@ -29,10 +29,10 @@ cloudinary.config({
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-  origin: process.env.NODE_ENV === "production"
-    ? "https://hr4.jjm-manufacturing.com"
-    : "http://localhost:5173",
+  origin: ["http://localhost:5173", "https://hr4.jjm-manufacturing.com"],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.urlencoded({ extended: true })); // Ensure JSON parsing
 
@@ -80,6 +80,7 @@ app.get("/EmComplaint", async (req, res) => {
     .then((complaints) => res.json(complaints))
     .catch((err) => res.json(err));
 });
+
 
 app.use("/api/integration", integrationRoutes);
 

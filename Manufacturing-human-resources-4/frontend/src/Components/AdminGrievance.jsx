@@ -62,27 +62,31 @@ const AdminDashboard = () => {
   const filteredComplaints = complaints.filter((complaint) => {
     const firstName = complaint.employee?.firstName || complaint.firstName || "";
     const lastName = complaint.employee?.lastName || complaint.lastName || "";
+    const complaintType = complaint.ComplaintType || ""; // Fixed: Changed from complaintType to ComplaintType
     const complaintDescription = complaint.ComplaintDescription || "";
     
     return (
       firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaintType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       complaintDescription.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
-  // Sorting logic: Sorting by date first and then other fields if needed
+  // Sorting logic
   const sortedComplaints = filteredComplaints.sort((a, b) => {
     if (sortConfig.key === "date") {
-      // Convert date strings to Date objects for comparison
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
       return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-    } else if (sortConfig.key === "firstName" || sortConfig.key === "lastName") {
-      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
-      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
+    } else if (sortConfig.key === "firstName" || sortConfig.key === "lastName" || sortConfig.key === "ComplaintType") {
+      const valueA = a[sortConfig.key] || '';
+      const valueB = b[sortConfig.key] || '';
+      return sortConfig.direction === "asc" 
+        ? valueA.localeCompare(valueB)
+        : valueB.localeCompare(valueA);
     }
+    return 0;
   });
 
   // Pagination logic
@@ -244,6 +248,10 @@ const AdminDashboard = () => {
                   Complaint Description
                   {sortConfig.key === "ComplaintDescription" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                 </th>
+                <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("complaintType")}>
+                  Complaint Type
+                  {sortConfig.key === "complaintType" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                </th>
                 <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("date")}>
                   Date
                   {sortConfig.key === "date" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
@@ -263,6 +271,7 @@ const AdminDashboard = () => {
                       {complaint.lastName || 'N/A'}
                     </td>
                     <td className="py-2 px-4">{complaint.ComplaintDescription || 'N/A'}</td>
+                    <td className="py-2 px-4">{complaint.ComplaintType || 'N/A'}</td> {/* Fixed: Changed from complaintType to ComplaintType */}
                     <td className="py-2 px-4">
                       {complaint.date ? new Date(complaint.date).toLocaleDateString() : 'N/A'}
                     </td>

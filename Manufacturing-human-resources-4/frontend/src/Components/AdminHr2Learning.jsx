@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import layout from "./Assets/layout.jpg";
 
 const EMPLOYEERECORDS = process.env.NODE_ENV === "development"
@@ -62,20 +63,14 @@ const AdminHr2Learning = () => {
       setLearningLoading(true);
       setLearningError(null);
 
-      fetch(LEARNINGRECORDS)
+      axios.get(LEARNINGRECORDS)
         .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const trainingArray = Array.isArray(data.data) ? data.data : [];
+          const trainingArray = Array.isArray(response.data.data) ? response.data.data : [];
           setLearningData(trainingArray);
           setLearningError(null);
         })
         .catch((error) => {
-          setLearningError(`Error: ${error.message}`);
+          setLearningError(`Error: ${error.response?.data?.message || error.message}`);
           setLearningData([]);
         })
         .finally(() => {

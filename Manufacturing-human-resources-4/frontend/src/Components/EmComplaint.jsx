@@ -24,6 +24,7 @@ const EmComplaint = () => {  // Removed user prop
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [complaint, setComplaint] = useState("");
+  const [complaintType, setComplaintType] = useState(""); // Add this line
   const [attachment, setAttachment] = useState(null);
   const [notification, setNotification] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,11 +71,11 @@ const EmComplaint = () => {  // Removed user prop
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", "Hr4_BudgetRequest");
-    formData.append("resource_type", "auto"); // 🔥 Dinagdag ito para matanggap kahit anong file
+    formData.append("resource_type", "raw"); // 🔥 Dinagdag ito para matanggap kahit anong file
   
     try {
       const response = await axios.post(
-        "https://api.cloudinary.com/v1_1/dhawghlsr/upload",
+        "https://api.cloudinary.com/v1_1/dhawghlsr/raw/upload",
         formData
       );
   
@@ -118,6 +119,7 @@ const EmComplaint = () => {  // Removed user prop
       const formData = {
         firstName: firstName,  // Changed from FirstName
         lastName: lastName,    // Changed from LastName
+        ComplaintType: complaintType, // Add this line
         ComplaintDescription: complaint,
         File: attachmentUrl,
         date: new Date().toISOString() // Adding date field
@@ -167,7 +169,7 @@ const EmComplaint = () => {  // Removed user prop
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto bg-white rounded-xl shadow-xl">
+    <div className="p-4 max-w-4xl mx-auto bg-white rounded-lg shadow-md">
       {/* Show Success Modal Only when showSuccess is true */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -198,9 +200,9 @@ const EmComplaint = () => {  // Removed user prop
         </div>
       )}
 
-      <div className="flex mb-8 space-x-10">
-        <div className="w-1/2 pr-10">
-          <h1 className="text-4xl font-bold text-blue-600 mb-6">Employee Complaint</h1>
+      <div className="flex space-x-6">
+        <div className="w-1/2 pr-6">
+          <h1 className="text-3xl font-bold text-blue-600 mb-4">Employee Complaint</h1>
 
           {/* Show Notification Banner Only for Errors */}
           {isError && notification && (
@@ -209,26 +211,43 @@ const EmComplaint = () => {  // Removed user prop
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-2">First Name</label>
-              <div className="w-full p-4 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-700">
+              <label className="block text-base font-medium text-gray-700 mb-1">First Name</label>
+              <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
                 {firstName}
               </div>
             </div>
 
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-2">Last Name</label>
-              <div className="w-full p-4 border-2 border-gray-300 rounded-xl bg-gray-100 text-gray-700">
+              <label className="block text-base font-medium text-gray-700 mb-1">Last Name</label>
+              <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
                 {lastName}
               </div>
             </div>
 
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-2">Complaint Description</label>
+              <label className="block text-base font-medium text-gray-700 mb-1">Complaint Type</label>
+              <select
+                className="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
+                value={complaintType}
+                onChange={(e) => setComplaintType(e.target.value)}
+                required
+              >
+                <option value="">Select a complaint type</option>
+                <option value="Salary issue">Salary issue</option>
+                <option value="Benefits issue">Benefits issue</option>
+                <option value="Workplace Conflict">Workplace Conflict</option>
+                <option value="Harassment">Harassment</option>
+                <option value="Unfair treatment">Unfair treatment</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-base font-medium text-gray-700 mb-1">Complaint Description</label>
               <textarea
-                className="w-full p-5 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
-                rows="5"
+                className="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
+                rows={3}
                 placeholder="Describe your complaint..."
                 value={complaint}
                 onChange={(e) => setComplaint(e.target.value)}
@@ -237,26 +256,26 @@ const EmComplaint = () => {  // Removed user prop
             </div>
 
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 mb-1">
                 Attachment (Required) <span className="text-red-500">*</span>
               </label>
               <input
                 type="file"
                 onChange={handleFileChange}
-                className="w-full border-2 border-gray-300 p-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
+                className="w-full border-2 border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
                 accept=".pdf"
                 required
               />
-              <small className="text-gray-500">Required: PDF file only. Max file size: 10MB.</small>
+              <small className="text-sm text-gray-500">PDF only. Max: 10MB</small>
             </div>
 
             <button
               type="submit"
               disabled={!attachment}
-              className={`w-full py-4 rounded-xl transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg ${
+              className={`w-full py-3 rounded-lg transition-all duration-300 text-base ${
                 !attachment 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-red-500 hover:bg-red-600 text-white focus:outline-none focus:ring-4 focus:ring-red-500'
+                : 'bg-red-500 hover:bg-red-600 text-white focus:ring-2 focus:ring-red-500 shadow-md'
               }`}
             >
               Submit Complaint
@@ -264,10 +283,10 @@ const EmComplaint = () => {  // Removed user prop
           </form>
         </div>
 
-        <div className="w-1/2 pl-10 flex items-center justify-center">
-          <p className="text-xl font-light text-gray-700 leading-relaxed text-justify">
-            We highly value your feedback. Please take a moment to describe the issue you're facing. 
-            Attach any relevant files, and we will address your concerns promptly.
+        <div className="w-1/2 pl-6 flex items-center">
+          <p className="text-lg text-gray-700 leading-relaxed">
+            We highly value your feedback. Please describe the issue you're facing. 
+            Attach relevant files, and we will address your concerns promptly.
           </p>
         </div>
       </div>

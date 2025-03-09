@@ -5,14 +5,14 @@ import ComplaintUser from "../models/ComplaintUser.js";
 export const submitComplaint = async (req, res) => {
   try {
     console.log("Request Body:", req.body); // Log the request body for debugging
-    const { firstName, lastName, ComplaintDescription } = req.body;
+    const { firstName, lastName, ComplaintType, ComplaintDescription } = req.body;
     const { File } = req.body; // Get file URL from frontend
     const file = File || null; // Use it in the complaint
-
 
     const newComplaint = new ComplaintUser({
       firstName,
       lastName,
+      ComplaintType,
       ComplaintDescription,
       File: file, // Dapat tama ang source ng file
     });

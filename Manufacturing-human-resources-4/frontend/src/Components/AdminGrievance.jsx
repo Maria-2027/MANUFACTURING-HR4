@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaSearch, FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon } from "react-icons/fa";
 import layout from "./Assets/layout.jpg"; // Logo image
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { Link, useNavigate } from "react-router-dom"; // Add Link import
 import AdminHr3Compensate from "./AdminHr3Compensate";
 
 const ADMINGRIEVANCE = process.env.NODE_ENV === "development"
@@ -146,65 +146,48 @@ const AdminDashboard = () => {
     );
   };
 
+  const handleLogout = () => {
+    // Add your logout logic here
+    console.log("Logged out");
+    navigate('/login'); // Adjust the path as needed
+  };
+
   return (
     <div className={`flex h-screen ${themeClasses}`}>
-      {/* Sidebar */}
-      <aside className={`w-72 shadow-lg p-6 flex flex-col relative ${sidebarClasses}`}>
-        <div className="flex justify-center mb-6" onClick={handleLogoClick}>
-          <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full cursor-pointer" />
-        </div>
-        <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
-
-        {/* Sidebar Links */}
-        <nav className="flex-grow">
-          <ul className="space-y-4">
-            {[
-              {
-                title: "Employee Grievances",
-                icon: <FaExclamationCircle className="text-lg" />,
-                link: "/admin-grievance",
-              },
-              {
-                title: "Employee Suggestions",
-                icon: <FaRegCommentDots className="text-lg" />,
-                link: "/admin-employee-suggestion",
-              },
-              {
-                title: "Communication Hub",
-                icon: <FaEnvelope className="text-lg" />,
-                link: "/admin-communication",
-              },
-              {
-                title: "Workforce Analytics",
-                icon: <FaChartBar className="text-lg" />,
-                link: "/admin-workflow",
-              },
-            ].map((item, index) => (
-              <li
-                key={index}
-                className={`flex items-center space-x-3 text-base font-medium p-2 rounded-md cursor-pointer transition duration-200 ${
-                  activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses
-                }`}
-                onClick={() => navigate(item.link)}
-              >
-                {item.icon}
-                <span>{item.title}</span>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Logout Button */}
-        <div className="absolute bottom-4 left-0 right-0 text-center">
-          <button
-            onClick={() => console.log("Logged out")}
-            className={`flex items-center justify-center space-x-4 text-lg font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${buttonHoverClasses} w-full`}
-          >
-            <FaSignOutAlt className="text-xl" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+     {/* Sidebar */}
+           <aside className={`w-72 shadow-lg p-6 flex flex-col relative h-screen overflow-y-auto ${sidebarClasses}`}>
+             <div className="flex justify-center mb-6">
+               <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full" />
+             </div>
+             <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
+     
+             <nav className="flex-grow">
+               <ul className="space-y-4">
+                 {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
+                   { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
+                   { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
+                   { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" }]
+                   .map((item, index) => (
+                     <li key={index} className={`p-3 rounded-md transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}>
+                       <Link to={item.link} className="flex items-center space-x-3" onClick={() => setActiveTab(item.title)}>
+                         {item.icon}
+                         <span>{item.title}</span>
+                       </Link>
+                     </li>
+                   ))}
+               </ul>
+             </nav>
+     
+             <div className="absolute bottom-4 left-0 right-0 text-center">
+               <button
+                 onClick={handleLogout}
+                 className={`flex items-center justify-center space-x-4 text-lg font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${buttonHoverClasses} w-full`}
+               >
+                 <FaSignOutAlt className="text-xl" />
+                 <span>Logout</span>
+               </button>
+             </div>
+           </aside>
 
       {/* Grievance Table */}
       <main className="flex-grow p-6 overflow-auto">

@@ -10,7 +10,7 @@ const EMPLOYEERECORDS = process.env.NODE_ENV === "development"
 const AdminWorkflow = () => {
   const navigate = useNavigate(); // Add this
   const [darkMode, setDarkMode] = useState(false);
-  const [activeButton, setActiveButton] = useState(""); // Track active button
+  const [activeButton, setActiveButton] = useState("Employee Records"); // Changed initial state
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("Workforce Analytics");
   const [loading, setLoading] = useState(false); // Add loading state
@@ -49,6 +49,32 @@ const AdminWorkflow = () => {
     }
   }, [activeButton]);
 
+  // Add new useEffect for initial data fetch
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    fetch(EMPLOYEERECORDS)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            setEmployees(data);
+            setError(null);
+        })
+        .catch((error) => {
+            console.error("Error fetching employee records:", error);
+            setError(`Error: ${error.message}`);
+            setEmployees([]);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+  }, []); // Empty dependency array means this runs once on mount
+
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = employees.slice(indexOfFirstRow, indexOfLastRow);
@@ -78,89 +104,61 @@ const AdminWorkflow = () => {
       : (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}
   `;
 
+  const buttonHoverClasses = darkMode 
+    ? "hover:bg-gray-700" 
+    : "hover:bg-gray-100";
+
   const handleLearningDevelopment = () => {
     setActiveButton("Learning and Development");
     navigate('/admin-hr2-learning');
   };
 
+  const handleLogout = () => {
+    navigate('/');
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Fixed Sidebar */}
-      <aside className={`fixed left-0 h-screen w-72 flex flex-col ${sidebarClasses}`}>
-        {/* Logo Container */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-center mb-4">
-            <img 
-              src={layout} 
-              alt="JJM Logo" 
-              className="w-24 h-24 rounded-full shadow-lg transition-transform hover:scale-105" 
-            />
-          </div>
-          <h2 className="text-xl font-bold text-center">JJM Admin Portal</h2>
-        </div>
-
-        {/* Navigation - with limited height and scrolling */}
-        <nav className="flex-1 overflow-y-auto">
-          <ul className="p-4 space-y-2">
-            {[ 
-              { 
-                title: "Employee Grievances", 
-                icon: <FaExclamationCircle className="text-xl" />, 
-                link: "/admin-grievance" 
-              },
-              { 
-                title: "Employee Suggestions", 
-                icon: <FaRegCommentDots className="text-xl" />, 
-                link: "/admin-employee-suggestion" 
-              },
-              { 
-                title: "Communication Hub", 
-                icon: <FaEnvelope className="text-xl" />, 
-                link: "/admin-communication" 
-              },
-              { 
-                title: "Workforce Analytics", 
-                icon: <FaChartBar className="text-xl" />, 
-                link: "/admin-workflow" 
-              },
-            ].map((item) => (
-              <li key={item.title}>
-                <Link 
-                  to={item.link} 
-                  className={navItemClasses(activeTab === item.title)}
-                  onClick={() => setActiveTab(item.title)}
+      {/* Sidebar */}
+            <aside className={`w-72 shadow-lg p-6 flex flex-col relative h-screen overflow-y-auto ${sidebarClasses}`}>
+              <div className="flex justify-center mb-6">
+                <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full" />
+              </div>
+              <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
+      
+              <nav className="flex-grow">
+                <ul className="space-y-4">
+                  {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
+                    { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
+                    { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
+                    { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" }]
+                    .map((item, index) => (
+                      <li key={index} className={`p-3 rounded-md transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}>
+                        <Link to={item.link} className="flex items-center space-x-3" onClick={() => setActiveTab(item.title)}>
+                          {item.icon}
+                          <span>{item.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </nav>
+      
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <button
+                  onClick={() => console.log("Logged out")}
+                  className={`flex items-center justify-center space-x-4 text-lg font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${buttonHoverClasses} w-full`}
                 >
-                  <span className="p-2 rounded-lg">{item.icon}</span>
-                  <span className="font-medium">{item.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Footer - always visible at bottom */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-inherit">
-          <button
-            onClick={() => console.log("Logged out")}
-            className={`
-              flex items-center justify-center w-full
-              px-4 py-3 rounded-lg
-              transition-all duration-200 ease-in-out
-              ${darkMode 
-                ? 'hover:bg-gray-700 text-gray-300 hover:text-white' 
-                : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'}
-            `}
-          >
-            <FaSignOutAlt className="text-xl mr-3" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </aside>
+                  <FaSignOutAlt className="text-xl" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </aside>
+      
 
       {/* Main Content - with offset and scrolling */}
-      <main className="flex-1 ml-72 overflow-x-hidden overflow-y-auto">
-        <div className="p-8 space-y-4">
-          <div className="flex space-x-4"> 
+      <main className="flex-1 overflow-x-hidden overflow-y-auto">
+        <div className="p-4">
+          <div className="flex space-x-4 mb-4"> 
             <button
               onClick={() => setActiveButton("Employee Records")}
               className={buttonClasses(activeButton === "Employee Records")}
@@ -176,9 +174,9 @@ const AdminWorkflow = () => {
             </button>
           </div>
 
-          <div className="flex space-x-8 w-full">
+          <div className="flex w-full">
             {activeButton === "Employee Records" && (
-              <div className="flex-1 bg-gray-200 p-8 rounded-lg shadow-lg">
+              <div className="w-full bg-gray-200 p-4 rounded-lg shadow-lg">
                 <h3 className="text-2xl font-semibold mb-4">Employee Records</h3>
                 {loading && <p>Loading...</p>}
                 {error && <p className="text-red-500">Error: {error}</p>}
@@ -202,16 +200,7 @@ const AdminWorkflow = () => {
                             </thead>
                             <tbody>
                               {currentRows.map((employee, index) => (
-                                <tr key={employee.id || `employee-${index}`} className="border-b">
-                                  <td className="px-4 py-2">{employee.employee_id}</td>
-                                  <td className="px-4 py-2">{employee.employee_firstname}</td>
-                                  <td className="px-4 py-2">{employee.employee_lastname}</td>
-                                  <td className="px-4 py-2">{employee.total_hours}</td>
-                                  <td className="px-4 py-2">{employee.overtime_hours}</td>
-                                  <td className="px-4 py-2">{employee.status}</td>
-                                  <td className="px-4 py-2">{employee.approved_at}</td>
-                                  <td className="px-4 py-2">{employee.minutes_late}</td>
-                                </tr>
+                                <tr key={employee.id || `employee-${index}`} className="border-b"><td className="px-4 py-2">{employee.employee_id}</td><td className="px-4 py-2">{employee.employee_firstname}</td><td className="px-4 py-2">{employee.employee_lastname}</td><td className="px-4 py-2">{employee.total_hours}</td><td className="px-4 py-2">{employee.overtime_hours}</td><td className="px-4 py-2">{employee.status}</td><td className="px-4 py-2">{employee.approved_at}</td><td className="px-4 py-2">{employee.minutes_late}</td></tr>
                               ))}
                             </tbody>
                           </table>

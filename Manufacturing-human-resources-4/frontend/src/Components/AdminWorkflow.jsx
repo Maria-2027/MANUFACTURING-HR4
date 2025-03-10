@@ -114,6 +114,7 @@ const AdminWorkflow = () => {
   };
 
   const handleLogout = () => {
+    localStorage.clear();
     navigate('/');
   };
 
@@ -145,7 +146,7 @@ const AdminWorkflow = () => {
       
               <div className="absolute bottom-4 left-0 right-0 text-center">
                 <button
-                  onClick={() => console.log("Logged out")}
+                  onClick={handleLogout}
                   className={`flex items-center justify-center space-x-4 text-lg font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${buttonHoverClasses} w-full`}
                 >
                   <FaSignOutAlt className="text-xl" />

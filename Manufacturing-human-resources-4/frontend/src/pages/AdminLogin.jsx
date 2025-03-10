@@ -39,41 +39,47 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async (e) => {
-
- 
     e.preventDefault();
     setLoading(true);
-    console.log(formData)
+    setError("");
+    
+    console.log('Attempting login with:', { email: formData.email });
+  
     try {
-      // Log the request data to ensure it's correct
-      console.log("Login Request Data:", formData);
+      console.log('Making API request to:', ADMINLOGIN);
+      const response = await axios.post(ADMINLOGIN, formData);
+      console.log('Server response:', response.data);
+
+      if (response.data.token) {
+        // Store the token and user data
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userRole", response.data.user?.role || "admin");
+        sessionStorage.setItem("accessToken", response.data.token);
   
-      // Send login request to backend API
-      const response = await axios.post  (ADMINLOGIN, formData);
+        setSuccess("Login successful! Redirecting...");
   
-      // Log the response to check its content
-      console.log("Backend Response:", response.data);
-  
-      // Handle success response
-      if (response.status === 200) {
-        setSuccess("Login Successful. Redirecting...");
         setTimeout(() => {
           navigate("/admin-dashboard");
         }, 2000);
-      }
-    } catch (err) {
-      // Log the error to check its details
-      console.error("Login Error:", err.response || err);
-      if (err.response) {
-        setError(err.response.data.message); // Display error message from backend
       } else {
-        setError("Server error. Please try again.");
+        throw new Error("Login failed - No token received");
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      if (error.response) {
+        setError(`Login failed: ${error.response.data.message || error.response.statusText}`);
+      } else if (error.request) {
+        setError("Network error - Could not connect to the server. Please check your internet connection.");
+      } else {
+        setError(`Login error: ${error.message}`);
+      }
+      
+      setTimeout(() => setError(null), 5000);
     } finally {
       setLoading(false);
     }
   };
-  
 
   if (isLoading) {
     return (

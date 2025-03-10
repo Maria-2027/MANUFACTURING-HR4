@@ -45,6 +45,11 @@ const Search = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.clear(); // Clear all localStorage data
+    navigate('/'); // Navigate to login page after logout
+  };
+
   return (
     <div className="w-full p-5 h-[85px] rounded-l-sm sticky top-0 z-50 bg-white text-black/70 shadow-md">
       <div className="flex justify-between items-center max-md:flex max-md:justify-end">
@@ -137,9 +142,9 @@ const Search = () => {
                 <Link to="/settings" className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
                   Settings
                 </Link>
-                <Link to="/login" className="block text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
+                <button onClick={handleLogout} className="block w-full text-left text-sm text-gray-700 hover:bg-gray-100 p-2 rounded-lg transition cursor-pointer">
                   Logout
-                </Link>
+                </button>
               </div>
             )}
           </div>

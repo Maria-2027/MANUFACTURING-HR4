@@ -147,9 +147,8 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logged out");
-    navigate('/login'); // Adjust the path as needed
+    localStorage.clear();
+    navigate('/');
   };
 
   return (

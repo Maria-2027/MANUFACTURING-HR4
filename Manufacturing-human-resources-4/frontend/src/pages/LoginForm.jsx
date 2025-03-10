@@ -42,30 +42,38 @@ import layoutImage from "../Components/Assets/layout.jpg";
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    setTimeout(async () => {
-      try {
-        const response = await axios.post(LOGINEMPLOYEE, formData);
-        if (response.data.success) {
-          const { accessToken } = response.data;
-          sessionStorage.setItem("accessToken", accessToken);
-          setSuccess(response.data.message);
-          setTimeout(() => {
-            setSuccess(null);
-            navigate("/dashboard");
-          }, 2000);
-        }
-      } catch (error) {
-        setError(error.response?.data?.message || error.message);
+  
+    try {
+      const response = await axios.post(LOGINEMPLOYEE, formData);
+      if (response.data.success) {
+        const { accessToken, userRole } = response.data;
+  
+        // ✅ Store session data correctly
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userRole", userRole);
+        sessionStorage.setItem("accessToken", accessToken);
+  
+        setSuccess(response.data.message);
+  
+        // ✅ Redirect based on user role
         setTimeout(() => {
-          setError(null);
+          if (userRole === "admin") {
+            navigate("/admin-dashboard");
+          } else {
+            navigate("/dashboard");
+          }
         }, 2000);
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error("Invalid login response");
       }
-    }, 1000);
+    } catch (error) {
+      setError(error.response?.data?.message || "Login failed. Please try again.");
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
-
+  
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminBudgetRequest from "./AdminBudgetRequest";
 import AdminBudgetStatus from "./AdminBudgetStatus";
 
@@ -19,6 +19,7 @@ const AdminEmployeeSuggestion = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state for API requests
   const rowsPerPage = 8;
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -39,6 +40,11 @@ const AdminEmployeeSuggestion = () => {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/');
   };
 
   const themeClasses = darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900";
@@ -89,7 +95,7 @@ const AdminEmployeeSuggestion = () => {
 
         <div className="absolute bottom-4 left-0 right-0 text-center">
           <button
-            onClick={() => console.log("Logged out")}
+            onClick={handleLogout}
             className={`flex items-center justify-center space-x-4 text-lg font-semibold p-3 rounded-md cursor-pointer transition duration-200 ${buttonHoverClasses} w-full`}
           >
             <FaSignOutAlt className="text-xl" />

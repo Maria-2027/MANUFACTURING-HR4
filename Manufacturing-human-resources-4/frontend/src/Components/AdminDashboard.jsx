@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";  // Logo image
-import { Link } from "react-router-dom";  // Import Link from react-router-dom
+import { Link, useNavigate } from "react-router-dom";  // Add useNavigate
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState();
   const [darkMode, setDarkMode] = useState(false);
   const [userName, setUserName] = useState("John Doe"); // Fixed initialization with a default value
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -35,7 +36,8 @@ const AdminDashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    console.log("Logged out");
+    localStorage.clear();
+    navigate('/');
   };
 
   const toggleDarkMode = () => {

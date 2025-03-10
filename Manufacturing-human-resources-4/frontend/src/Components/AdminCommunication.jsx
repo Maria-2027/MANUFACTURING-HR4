@@ -38,10 +38,7 @@ const AdminCommunication = () => {
   const [isLoading, setIsLoading] = useState(true); // Loading state
 
   const handleLogout = () => {
-    // Clear any stored authentication data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Redirect to login page
+    localStorage.clear();
     navigate('/');
   };
 

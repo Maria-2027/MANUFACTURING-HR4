@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const ADMINHR3 = process.env.NODE_ENV === "development"
     ? "http://localhost:7688/api/integration/get-employee-violation"
@@ -13,6 +13,7 @@ const AdminDashboard = () => {
   const [data, setData] = useState([]); // Initialize as empty array
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +43,8 @@ const AdminDashboard = () => {
   ; // Empty dependency array means this runs once on component mount
 
   const handleLogout = () => {
-    console.log("Logged out");
+    localStorage.clear();
+    navigate('/');
   };
 
   return (

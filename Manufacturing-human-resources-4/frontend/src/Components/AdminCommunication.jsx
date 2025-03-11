@@ -38,6 +38,7 @@ const AdminCommunication = () => {
   const [isLoading, setIsLoading] = useState(true); // Loading state
 
   const handleLogout = () => {
+
     localStorage.clear();
     navigate('/');
   };

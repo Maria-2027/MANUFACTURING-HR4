@@ -4,6 +4,7 @@ import layout from "./Assets/layout.jpg"; // Logo image
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom"; // Add Link import
 import AdminHr3Compensate from "./AdminHr3Compensate";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ADMINGRIEVANCE = process.env.NODE_ENV === "development"
     ? "http://localhost:7688/EmComplaint"
@@ -188,13 +189,35 @@ const AdminDashboard = () => {
              </div>
            </aside>
 
-      {/* Grievance Table */}
-      <main className="flex-grow p-6 overflow-auto">
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold">Employee Grievances</h3>
+      {/* Animated main content */}
+      <motion.main 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex-grow p-6 overflow-auto"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-4"
+        >
+          <motion.h3 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-xl font-semibold"
+          >
+            Employee Grievances
+          </motion.h3>
 
           <div className="flex items-center justify-between mb-6">
-            <div className="relative flex-1 max-w-md">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="relative flex-1 max-w-md"
+            >
               <input
                 type="text"
                 placeholder="Search Grievances"
@@ -203,16 +226,27 @@ const AdminDashboard = () => {
                 className="w-full p-4 pl-12 pr-4 bg-white border-2 border-gray-300 rounded-md text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl"
               />
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            </div>
-            <div 
+            </motion.div>
+            
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
               onClick={handleCompensationClick}
               className="ml-4 p-4 bg-blue-100 rounded-lg shadow-md hover:bg-blue-200 cursor-pointer transition-colors duration-200"
             >
               <span className="font-semibold text-blue-800">Active Content: Compensation & Sanctions</span>
-            </div>
+            </motion.div>
           </div>
 
-          <table className="min-w-full mt-6 table-auto border-collapse">
+          <motion.table
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="min-w-full mt-6 table-auto border-collapse"
+          >
             <thead>
               <tr className="border-b">
                 <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleSort("firstName")}>
@@ -241,54 +275,79 @@ const AdminDashboard = () => {
                 <th className="py-2 px-4 text-left">File</th>
               </tr>
             </thead>
-            <tbody>
-              {sortedComplaints
-                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map((complaint, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="py-2 px-4">
-                      {complaint.firstName || 'N/A'}
-                    </td>
-                    <td className="py-2 px-4">
-                      {complaint.lastName || 'N/A'}
-                    </td>
-                    <td className="py-2 px-4">{complaint.ComplaintDescription || 'N/A'}</td>
-                    <td className="py-2 px-4">{complaint.ComplaintType || 'N/A'}</td> {/* Fixed: Changed from complaintType to ComplaintType */}
-                    <td className="py-2 px-4">
-                      {complaint.date ? new Date(complaint.date).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="py-2 px-4">
-                      <FileDisplay fileUrl={complaint.File} />
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+            <AnimatePresence>
+              <tbody>
+                {sortedComplaints
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((complaint, index) => (
+                    <motion.tr
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="py-2 px-4">
+                        {complaint.firstName || 'N/A'}
+                      </td>
+                      <td className="py-2 px-4">
+                        {complaint.lastName || 'N/A'}
+                      </td>
+                      <td className="py-2 px-4">{complaint.ComplaintDescription || 'N/A'}</td>
+                      <td className="py-2 px-4">{complaint.ComplaintType || 'N/A'}</td> {/* Fixed: Changed from complaintType to ComplaintType */}
+                      <td className="py-2 px-4">
+                        {complaint.date ? new Date(complaint.date).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="py-2 px-4">
+                        <FileDisplay fileUrl={complaint.File} />
+                      </td>
+                    </motion.tr>
+                  ))}
+              </tbody>
+            </AnimatePresence>
+          </motion.table>
 
-          {/* Pagination Controls */}
-          <div className="mt-4 flex justify-between">
-            <button
+          {/* Animated pagination controls */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="mt-4 flex justify-between"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(currentPage - 1)}
               className="bg-blue-500 text-white p-2 rounded"
             >
               Previous
-            </button>
+            </motion.button>
             <span className="self-center">{`Page ${currentPage} of ${totalPages}`}</span>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
               className="bg-blue-500 text-white p-2 rounded"
             >
               Next
-            </button>
-          </div>
-        </div>
-      </main>
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      </motion.main>
 
-      {/* Dark Mode Toggle Button */}
-      <div className="absolute top-5 right-5">
-        <button
+      {/* Animated dark mode toggle */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        className="absolute top-5 right-5"
+      >
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           onClick={toggleDarkMode}
           className="bg-gray-200 p-2 rounded-full shadow-lg transition duration-200 hover:bg-gray-300"
         >
@@ -297,8 +356,8 @@ const AdminDashboard = () => {
           ) : (
             <FaMoon className={`${themeToggleClasses} text-xl`} />
           )}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   );
 };

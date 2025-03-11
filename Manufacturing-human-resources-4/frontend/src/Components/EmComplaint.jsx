@@ -7,38 +7,54 @@ const EMCOMPLAINT = process.env.NODE_ENV === "development"
   : "https://backend-hr4.jjm-manufacturing.com/api/auth/EmComplaint";
 
 const PROFILE = process.env.NODE_ENV === 'development'
-  ? 'http://localhost:7688/api/auth/profile'
-  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/profile';
+  ? 'http://localhost:7688/api/auth/testLog'
+  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/testLog';
+
+const api = axios.create({
+  baseURL: process.env.NODE_ENV === 'development'
+    ? 'http://localhost:7688'
+    : 'https://backend-hr4.jjm-manufacturing.com',
+  headers: {
+    Authorization: `Bearer ${sessionStorage.getItem('accessToken')}`,
+    'Content-Type': 'application/json'
+  }
+});
 
 const EmComplaint = () => {  // Removed user prop
   const navigate = useNavigate();
-  const token = sessionStorage.getItem('accessToken');
-  const api = axios.create({
-    baseURL: 'http://localhost:7688',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+  
+  const [firstName, setFirstName] = useState(() => {
+    const storedData = localStorage.getItem("userData");
+    return storedData ? JSON.parse(storedData).firstName : "";
   });
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [lastName, setLastName] = useState(() => {
+    const storedData = localStorage.getItem("userData");
+    return storedData ? JSON.parse(storedData).lastName : "";
+  });
   const [complaint, setComplaint] = useState("");
   const [complaintType, setComplaintType] = useState(""); // Add this line
   const [attachment, setAttachment] = useState(null);
   const [notification, setNotification] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get(PROFILE);
-      if (response.data && response.data.success) {
-        setFirstName(response.data.data.firstname);
-        setLastName(response.data.data.lastname);
+      const response = await api.get('/api/auth/testLog');
+      if (response.data) {
+        const userData = response.data.data;
+        setFirstName(userData.firstName);
+        setLastName(userData.lastName);
+        localStorage.setItem("userData", JSON.stringify(userData));
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
+      if (error.response?.status === 401) {
+        sessionStorage.removeItem('accessToken');
+        localStorage.removeItem('isAuthenticated');
+        navigate('/login');
+      }
     }
   };
 
@@ -99,10 +115,12 @@ const EmComplaint = () => {  // Removed user prop
     e.preventDefault();
     setIsError(false);
     setShowSuccess(false);
+    setIsLoading(true); // Add this
 
     if (!attachment) {
       setIsError(true);
       setNotification("Please attach a PDF file before submitting.");
+      setIsLoading(false); // Add this
       setTimeout(() => {
         setNotification("");
         setIsError(false);
@@ -165,6 +183,8 @@ const EmComplaint = () => {  // Removed user prop
         setNotification("");
         setIsError(false);
       }, 3000);
+    } finally {
+      setIsLoading(false); // Add this
     }
   };
 
@@ -215,14 +235,14 @@ const EmComplaint = () => {  // Removed user prop
             <div>
               <label className="block text-base font-medium text-gray-700 mb-1">First Name</label>
               <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
-                {firstName}
+                {firstName || 'Loading...'}
               </div>
             </div>
 
             <div>
               <label className="block text-base font-medium text-gray-700 mb-1">Last Name</label>
               <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
-                {lastName}
+                {lastName || 'Loading...'}
               </div>
             </div>
 
@@ -271,14 +291,37 @@ const EmComplaint = () => {  // Removed user prop
 
             <button
               type="submit"
-              disabled={!attachment}
-              className={`w-full py-3 rounded-lg transition-all duration-300 text-base ${
-                !attachment 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-red-500 hover:bg-red-600 text-white focus:ring-2 focus:ring-red-500 shadow-md'
-              }`}
+              disabled={!attachment || isLoading}
+              className="p-4 w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl 
+                shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] transition-all duration-300
+                hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.4)] text-base font-semibold
+                flex items-center justify-center space-x-4 overflow-hidden relative
+                before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent 
+                before:via-white before:to-transparent before:opacity-20 before:hover:translate-x-full
+                before:transition-transform before:duration-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Complaint
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <span>Submit Complaint</span>
+              )}
             </button>
           </form>
         </div>

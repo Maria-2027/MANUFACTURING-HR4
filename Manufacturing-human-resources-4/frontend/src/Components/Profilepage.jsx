@@ -3,21 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const PROFILE = process.env.NODE_ENV === 'development'
-  ? 'http://localhost:7688/api/auth/profile'
-  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/profile';
+  ? 'http://localhost:7688/api/auth/testLog'
+  : 'https://backend-hr4.jjm-manufacturing.com/api/auth/testLog';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const token = sessionStorage.getItem('accessToken');
   const api = axios.create({
-    baseURL: 'http://localhost:7688',
+    baseURL: process.env.NODE_ENV === 'development'
+      ? 'http://localhost:7688'
+      : 'https://backend-hr4.jjm-manufacturing.com',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
 
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(() => {
+    const storedData = localStorage.getItem("userData");
+    return storedData ? JSON.parse(storedData) : {};
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState(null);
@@ -31,12 +36,32 @@ const ProfilePage = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
+      // First try to get data from localStorage
+      const storedData = localStorage.getItem("userData");
+      if (storedData) {
+        setUser(JSON.parse(storedData));
+        setError(''); // Clear any existing errors since we have data
+      }
+
+      // Then fetch fresh data from API
       const response = await api.get(PROFILE);
-      if (response.data && response.data.success) {
-        setUser(response.data.data);
+      if (response.data) {
+        setUser(response.data);
+        localStorage.setItem("userData", JSON.stringify(response.data));
+        setError(''); // Clear any existing errors
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to load profile');
+      console.error('Profile fetch error:', error);
+      if (error.response?.status === 401) {
+        sessionStorage.removeItem('accessToken');
+        localStorage.removeItem('isAuthenticated');
+        navigate('/login');
+        return;
+      }
+      // Only set error if we don't have localStorage data
+      if (!localStorage.getItem("userData")) {
+        setError(error.response?.data?.message || 'Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }
@@ -202,12 +227,9 @@ const ProfilePage = () => {
         </div>
         
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-gray-700">First Name: <span className="font-normal">{user.firstname}</span></p>
-          <p className="text-lg font-semibold text-gray-700">Last Name: <span className="font-normal">{user.lastname}</span></p>
-          <p className="text-lg font-semibold text-gray-700">Username: <span className="font-normal">{user.username}</span></p>
+          <p className="text-lg font-semibold text-gray-700">First Name: <span className="font-normal">{user.firstName}</span></p>
+          <p className="text-lg font-semibold text-gray-700">Last Name: <span className="font-normal">{user.lastName}</span></p>
           <p className="text-lg font-semibold text-gray-700">Email: <span className="font-normal">{user.email}</span></p>
-          <p className="text-lg font-semibold text-gray-700">Phone: <span className="font-normal">{user.phone}</span></p>
-          <p className="text-lg font-semibold text-gray-700">Address: <span className="font-normal">{user.address}</span></p>
           <p className="text-lg font-semibold text-gray-700">Role: <span className="font-normal">{user.role}</span></p>
         </div>
         

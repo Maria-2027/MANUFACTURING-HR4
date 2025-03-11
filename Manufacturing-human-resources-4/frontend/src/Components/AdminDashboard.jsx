@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon } from "react-icons/fa";
-import layout from "./Assets/layout.jpg";  // Logo image
-import { Link, useNavigate } from "react-router-dom";  // Add useNavigate
+import { SyncLoader } from "react-spinners";
+import layout from "./Assets/layout.jpg";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -36,8 +38,19 @@ const AdminDashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
+    try {
+      // Clear all items from localStorage
+      localStorage.clear();
+      
+      // Verify localStorage is empty
+      if (localStorage.length === 0) {
+        navigate('/', { replace: true });
+      } else {
+        console.error('Failed to clear localStorage');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const toggleDarkMode = () => {
@@ -67,19 +80,48 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-gray-800 mb-4"></div>
-          <p className="text-gray-800 text-xl">Loading...</p>
-        </div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
+        className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100"
+      >
+        <motion.div 
+          className="flex flex-col items-center"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ 
+            repeat: Infinity,
+            duration: 2.5,
+            ease: "easeInOut"
+          }}
+        >
+          <SyncLoader
+            cssOverride={{}}
+            loading
+            color="#000000"
+            margin={12}
+            size={15}
+            speedMultiplier={0.5}
+          />
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <div className={`flex h-screen ${themeClasses}`}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      className={`flex h-screen ${themeClasses}`}
+    >
       {/* Sidebar */}
-      <aside className={`w-72 shadow-lg p-6 flex flex-col relative ${sidebarClasses}`}>
+      <motion.aside
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className={`w-72 shadow-lg p-6 flex flex-col relative ${sidebarClasses}`}
+      >
         {/* Logo Section */}
         <div className="flex justify-center mb-8">
           <Link to="/admin-dashboard">
@@ -91,57 +133,79 @@ const AdminDashboard = () => {
         {/* Sidebar Links */}
         <nav className="flex-grow">
           <ul className="space-y-5">
-            <li
-              className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Grievances" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-            >
-              <Link
-                to="/admin-grievance"
-                className="flex items-center space-x-3"
-                onClick={() => setActiveTab("Employee Grievances")}
+            <AnimatePresence mode="wait">
+              <motion.li
+                key="grievances"
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Grievances" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
               >
-                <FaExclamationCircle className="text-lg" />
-                <span>Employee Grievances</span>
-              </Link>
-            </li>
+                <Link
+                  to="/admin-grievance"
+                  className="flex items-center space-x-3"
+                  onClick={() => setActiveTab("Employee Grievances")}
+                >
+                  <FaExclamationCircle className="text-lg" />
+                  <span>Employee Grievances</span>
+                </Link>
+              </motion.li>
 
-            <li
-              className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Suggestions" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-            >
-              <Link
-                to="/admin-employee-suggestion"
-                className="flex items-center space-x-3"
-                onClick={() => setActiveTab("Employee Suggestions")}
+              <motion.li
+                key="suggestions"
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Suggestions" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
               >
-                <FaRegCommentDots className="text-lg" />
-                <span>Employee Suggestions</span>
-              </Link>
-            </li>
+                <Link
+                  to="/admin-employee-suggestion"
+                  className="flex items-center space-x-3"
+                  onClick={() => setActiveTab("Employee Suggestions")}
+                >
+                  <FaRegCommentDots className="text-lg" />
+                  <span>Employee Suggestions</span>
+                </Link>
+              </motion.li>
 
-            <li
-              className={`p-3 rounded-md transition duration-200 ${activeTab === "Communication Hub" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-            >
-              <Link
-                to="/admin-communication"
-                className="flex items-center space-x-3"
-                onClick={() => setActiveTab("Communication Hub")}
+              <motion.li
+                key="communication"
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`p-3 rounded-md transition duration-200 ${activeTab === "Communication Hub" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
               >
-                <FaEnvelope className="text-lg" />
-                <span>Communication Hub</span>
-              </Link>
-            </li>
+                <Link
+                  to="/admin-communication"
+                  className="flex items-center space-x-3"
+                  onClick={() => setActiveTab("Communication Hub")}
+                >
+                  <FaEnvelope className="text-lg" />
+                  <span>Communication Hub</span>
+                </Link>
+              </motion.li>
 
-            <li
-              className={`p-3 rounded-md transition duration-200 ${activeTab === "Workforce Analytics" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-            >
-              <Link
-                to="/admin-workflow"
-                className="flex items-center space-x-3"
-                onClick={() => setActiveTab("Workforce Analytics")}
+              <motion.li
+                key="analytics"
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 50, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`p-3 rounded-md transition duration-200 ${activeTab === "Workforce Analytics" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
               >
-                <FaChartBar className="text-lg" />
-                <span>Workforce Analytics</span>
-              </Link>
-            </li>
+                <Link
+                  to="/admin-workflow"
+                  className="flex items-center space-x-3"
+                  onClick={() => setActiveTab("Workforce Analytics")}
+                >
+                  <FaChartBar className="text-lg" />
+                  <span>Workforce Analytics</span>
+                </Link>
+              </motion.li>
+            </AnimatePresence>
           </ul>
         </nav>
 
@@ -155,12 +219,23 @@ const AdminDashboard = () => {
             <span>Logout</span>
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10">
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="flex-1 p-10"
+      >
         {/* Dark Mode Toggle Button */}
-        <div className="absolute top-5 right-5">
+        <motion.div 
+          whileHover={{ 
+            scale: 1.05,
+            transition: { duration: 0.3, ease: "easeInOut" }
+          }}
+          className="absolute top-5 right-5"
+        >
           <button
             onClick={toggleDarkMode}
             className="bg-gray-200 p-2 rounded-full shadow-lg transition duration-200 hover:bg-gray-300"
@@ -171,12 +246,21 @@ const AdminDashboard = () => {
               <FaMoon className="text-gray-800 text-xl" />
             )}
           </button>
-        </div>
+        </motion.div>
 
-        {/* Greeting Section */}
-        <div className={`p-6 rounded-xl shadow-md text-center transition hover:shadow-2xl duration-300 ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        }`}>
+        {/* Enhanced Greeting Section */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ 
+            duration: 0.8,
+            delay: 0.5,
+            type: "spring",
+            stiffness: 50,
+            damping: 15
+          }}
+          className={`mt-8 p-8 rounded-xl shadow-lg ${cardClasses} backdrop-blur-sm bg-opacity-90`}
+        >
           <h1 className={`text-4xl font-extrabold ${
             darkMode ? "text-white" : "text-gray-900"
           }`}>
@@ -192,10 +276,15 @@ const AdminDashboard = () => {
           }`}>
             Current Time: {currentTime}
           </p>
-        </div>
+        </motion.div>
 
-        {/* Admin Cards */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {/* Enhanced Admin Cards */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+          className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
+        >
           {[{
             icon: <FaExclamationCircle />,
             title: "Employee Grievances",
@@ -217,17 +306,34 @@ const AdminDashboard = () => {
             desc: "Analyze employee performance and trends.",
             link: "/admin-workforce-analytics"
           }].map((item, index) => (
-            <div key={index} className={`p-6 rounded-lg shadow-lg flex flex-col items-center transform hover:scale-105 transition duration-300 ease-in-out ${cardClasses}`}>
+            <motion.div
+              key={index}
+              whileHover={{ 
+                scale: 1.02,
+                transition: { 
+                  duration: 0.4,
+                  ease: "easeInOut"
+                }
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.8,
+                delay: index * 0.2 + 0.8,
+                ease: "easeOut"
+              }}
+              className={`p-6 rounded-lg shadow-lg flex flex-col items-center ${cardClasses}`}
+            >
               <div className="text-4xl text-blue-600">{item.icon}</div>
               <h3 className="mt-4 text-xl font-semibold">
                 <Link to={item.link} className="hover:text-blue-600">{item.title}</Link>
               </h3>
               <p className="text-center">{item.desc}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
-      </main>
-    </div>
+        </motion.div>
+      </motion.main>
+    </motion.div>
   );
 };
 

@@ -22,6 +22,7 @@ import AdminWorkflow from "./Components/AdminWorkflow";
 import AdminHr3 from "./Components/AdminHr3Compensate";
 import AdminHr2 from "./Components/AdminHr2Learning";
 import ProtectedRoutes from "./utils/protectedRoutes";
+import { Toaster } from 'react-hot-toast';
 
 const App = () => {
   const location = useLocation();
@@ -32,6 +33,7 @@ const App = () => {
 
   return (
     <div className="flex min-h-screen">
+      <Toaster position="top-center" />
       {!hideSidebarAndSearchBar && <Sidebar />}
       <div className="flex flex-col w-full">
         {!hideSidebarAndSearchBar && <Search />}

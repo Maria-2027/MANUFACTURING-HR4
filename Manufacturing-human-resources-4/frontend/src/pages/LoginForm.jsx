@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { FaUser, FaLock } from "react-icons/fa"; 
-import layoutImage from "../Components/Assets/layout.jpg";
- // Import your image
+import { useNavigate } from "react-router-dom";
+import { FaUser, FaLock } from "react-icons/fa";
+import { SyncLoader } from "react-spinners";
+import layoutImage from "../Components/Assets/layout.jpg"; // Company Branding Image
+import axios from 'axios'; // Import axios
+import { MetroSpinner } from 'react-spinners-kit';
 
- const LOGINEMPLOYEE = process.env.NODE_ENV === "development"
-  ? "http://localhost:7688/api/auth/login"
-  : "https://backend-hr4.jjm-manufacturing.com/api/auth/login";
+const EMPLOYEELOGIN = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/auth/testLog"
+  : "https://backend-hr4.jjm-manufacturing.com/api/auth/testLog";
 
-
- const Login = () => {
+const EmployeeLogin = () => {
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
-    username: "",
+    email: "", // Changed from username to email
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(true);
 
+  const [isLoading, setIsLoading] = useState(true);
   const [fadeInForm, setFadeInForm] = useState(false);
   const [fadeInText, setFadeInText] = useState(false);
+  
 
   useEffect(() => {
     setTimeout(() => {
@@ -42,86 +43,67 @@ import layoutImage from "../Components/Assets/layout.jpg";
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+    setError("");
+    
     try {
-      const response = await axios.post(LOGINEMPLOYEE, formData);
-      if (response.data.success) {
-        const { accessToken, userRole } = response.data;
-  
-        // ✅ Store session data correctly
+      const response = await axios.post(EMPLOYEELOGIN, formData);
+      
+      if (response.data && response.data.token) {
+        // Check if user has Employee role
+        if (response.data.user.role !== "Employee") {
+          throw new Error("Access denied. Only Employees can login here.");
+        }
+
+        // Store token and user data
+        sessionStorage.setItem("accessToken", response.data.token);
         localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userRole", userRole);
-        sessionStorage.setItem("accessToken", accessToken);
-  
-        setSuccess(response.data.message);
-  
-        // ✅ Redirect based on user role
-        setTimeout(() => {
-          if (userRole === "admin") {
-            navigate("/admin-dashboard");
-          } else {
-            navigate("/dashboard");
-          }
-        }, 2000);
+        localStorage.setItem("userData", JSON.stringify(response.data.user));
+        
+        // Set axios default header for future requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => navigate("/dashboard"), 2000);
       } else {
-        throw new Error("Invalid login response");
+        throw new Error("Invalid response from server");
       }
     } catch (error) {
-      setError(error.response?.data?.message || "Login failed. Please try again.");
-      setTimeout(() => setError(null), 3000);
+      console.error('Login error:', error);
+      setError(error.response?.data?.message || error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="text-center text-gray-700">
-          <div className="spinner-border animate-spin inline-block w-12 h-12 border-4 border-gray-300 border-t-gray-700 rounded-full mb-4"></div>
-          <h2 className="text-3xl font-semibold">Loading...</h2>
+          <SyncLoader cssOverride={{}} loading color="#000000" margin={12} size={15} speedMultiplier={0.5} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-200">
-      <div
-        className={`flex justify-center items-center w-full md:w-1/2 p-10 transform transition-opacity duration-1000 ${fadeInForm ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col w-full max-w-sm p-8 bg-white shadow-xl rounded-lg"
-        >
-          {error && (
-            <span className="bg-red-600 text-white flex justify-center items-center p-2 rounded-md mb-4">
-              {error}
-            </span>
-          )}
-          {success && (
-            <span className="bg-green-600 text-white flex justify-center items-center p-2 rounded-md mb-4">
-              {success}
-            </span>
-          )}
-
-          <h2 className="mb-6 text-4xl font-semibold text-center text-gray-700">
-            Login to HR4
-          </h2>
-
+    <div className="flex h-screen bg-gray-100">
+      <div className={`flex justify-center items-center w-full md:w-1/2 p-10 transform transition-opacity duration-1000 ${fadeInForm ? "opacity-100" : "opacity-0"}`}>
+        <form onSubmit={handleSubmit} className="flex flex-col w-full max-w-md p-8 bg-white shadow-2xl rounded-lg border border-gray-200">
+          <h2 className="mb-6 text-4xl font-bold text-center text-gray-800">Employee Login</h2>
+          {error && <p className="bg-red-600 text-white p-2 rounded-md text-center mb-4">{error}</p>}
+          {success && <p className="bg-green-600 text-white p-2 rounded-md text-center mb-4">{success}</p>}
           <div className="relative mb-6">
             <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
               onChange={handleChange}
-              className="w-full p-4 pl-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
+              className="w-full p-4 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
               required
             />
-            <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500" />
+            <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500 text-xl" />
           </div>
-
           <div className="relative mb-6">
             <input
               type="password"
@@ -129,70 +111,45 @@ import layoutImage from "../Components/Assets/layout.jpg";
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full p-4 pl-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
+              className="w-full p-4 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
               required
             />
-            <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500" />
+            <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500 text-xl" />
           </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center mb-4">
-              <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 border-gray-300 border-t-gray-700 rounded-full"></div>
-            </div>
-          ) : (
-            <button
-              type="submit"
-              className="mt-4 p-4 bg-teal-600 text-white rounded-md shadow-md hover:bg-teal-700 transition duration-300 transform hover:scale-105"
-            >
-              Login
-            </button>
-          )}
-
+          <button
+            type="submit"
+            disabled={loading}
+            className={`p-4 w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl 
+              shadow-lg transition-all duration-300 text-base font-semibold
+              flex items-center justify-center space-x-4
+              ${loading ? 'opacity-90' : 'hover:shadow-xl hover:translate-y-[-2px]'}`}
+          >
+            {loading ? (
+              <span className="flex items-center gap-3">
+                <MetroSpinner size={20} color="white" loading={true} />
+                <span>Processing...</span>
+              </span>
+            ) : (
+              'Login'
+            )}
+          </button>
           <p className="mt-4 text-center text-gray-600">
-            No account yet?{" "}
-            <Link
-              to="/signup"
-              className="text-teal-600 font-semibold hover:underline"
-            >
-              Sign up here.
-            </Link>
-          </p>
-
-          <p className="mt-2 text-center text-gray-600">
-            <Link
-              to="/ForgotPassword"
-              className="text-teal-600 font-semibold hover:underline"
-            >
+            <a href="/ForgotPassword" className="text-teal-600 font-semibold hover:underline">
               Forgot Password?
-            </Link>
+            </a>
           </p>
         </form>
       </div>
-
-      <div
-        className={`hidden md:flex items-center justify-center w-1/2 p-10 transition-all duration-1000 ${fadeInText ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}
-      >
+      <div className={`hidden md:flex items-center justify-center w-1/2 p-10 transition-all duration-1000 ${fadeInText ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"}`}>
         <div className="text-center p-6 rounded-lg">
-          {/* Small Image */}
-          <img
-            src={layoutImage}
-            alt="JJM Layout"
-            className="w-32 h-32 mx-auto mb-4 rounded-lg shadow-md"
-          />
-          
-          <h1 className="text-5xl font-extrabold text-gray-900">
-            JJM MANUFACTURING
-          </h1>
-          <p className="mt-4 text-2xl font-semibold text-gray-900">
-          Basta Best Quality and Best Brand JJM na Yan!
-          </p>
-          <p className="mt-2 text-lg text-gray-900">
-            Welcome to HR4, your partner in soap innovation!
-          </p>
+          <img src={layoutImage} alt="JJM Layout" className="w-40 h-40 mx-auto mb-4 rounded-lg shadow-lg" />
+          <h1 className="text-5xl font-extrabold text-gray-900">JJM MANUFACTURING</h1>
+          <p className="mt-4 text-2xl font-semibold text-gray-900">Basta Best Quality, JJM na yan!</p>
+          <p className="mt-2 text-lg text-gray-900">Employee Access to HR4</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default EmployeeLogin;

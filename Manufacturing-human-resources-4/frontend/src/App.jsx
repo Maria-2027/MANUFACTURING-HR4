@@ -39,14 +39,14 @@ const App = () => {
         {!hideSidebarAndSearchBar && <Search />}
 
         <Routes>
-        <Route path="/account" element={<AccountPanel />} />
+          <Route path="/" element={<Navigate to="/account" replace />} />
+          <Route path="/account" element={<AccountPanel />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/ForgotPassword" element={<ForgotPassword />} />
           <Route path="/admin" element={<AdminLoginform />} />
 
           <Route element={<ProtectedRoutes />}>
-            <Route path="/" element={<Navigate to="/account" />} />
             <Route path="/workforce" element={<Workforce />} />
             <Route path="/EmComplaint" element={<EmComplaint />} />
             <Route path="/communicationportal" element={<CommunicationPortal />} />

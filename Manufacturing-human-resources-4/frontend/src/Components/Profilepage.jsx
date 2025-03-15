@@ -172,180 +172,123 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-40">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-12 w-12 border-t-4 border-blue-500 rounded-full"
+          className="h-8 w-8 border-t-3 border-blue-500 rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden"
-        >
-          <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
-            <div className="absolute -bottom-16 left-8">
-              <div className="relative">
-                <img 
-                  src={previewUrl || user.profilePic || defaultAvatar}
-                  alt="Profile"
-                  className="w-32 h-32 rounded-full border-4 border-white object-cover"
-                  onError={handleImageError}
-                />
-                <label className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer hover:bg-blue-600 transition-colors">
-                  <FaCamera className="text-white" />
-                  <input 
-                    type="file"
-                    accept="image/jpeg,image/png,image/jpg"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </label>
+    <div className="max-w-2xl mx-auto p-4">
+      <div className="bg-white shadow-sm rounded-lg p-6">
+        <div className="flex items-start gap-6 mb-6">
+          <div className="relative">
+            <img 
+              src={previewUrl || user.profilePic || defaultAvatar}
+              alt="Profile"
+              className="w-20 h-20 rounded-full border-2 border-gray-200 object-cover"
+              onError={handleImageError}
+            />
+            <label className="absolute bottom-0 right-0 bg-gray-100 p-1.5 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
+              <FaCamera className="text-gray-600 text-xs" />
+              <input 
+                type="file"
+                accept="image/jpeg,image/png,image/jpg"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold mb-1">{`${user.firstName} ${user.lastName}`}</h2>
+            <p className="text-gray-500 text-sm mb-3">{user.email}</p>
+            <div className="flex gap-2">
+              {selectedFile && (
+                <button
+                  onClick={handleUpload}
+                  disabled={uploadLoading}
+                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                >
+                  {uploadLoading ? 'Uploading...' : 'Upload Photo'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm text-gray-500">Personal Information</span>
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <span className="text-gray-600 font-medium">Full Name:</span>
+                    <p className="text-gray-800">{`${user.firstName} ${user.lastName}`}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">Email:</span>
+                    <p className="text-gray-800">{user.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">Role:</span>
+                    <p className="text-gray-800 capitalize">{user.role}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm text-gray-500">Employment Details</span>
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <span className="text-gray-600 font-medium">Employee ID:</span>
+                    <p className="text-gray-800">{user.employeeId || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">Department:</span>
+                    <p className="text-gray-800">{user.department || 'Not set'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 font-medium">Position:</span>
+                    <p className="text-gray-800">{user.position || 'Not set'}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
-          <div className="pt-20 px-8 pb-8">
-            <div className="flex items-center space-x-6 mb-6">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'profile' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <FaUser />
-                <span>Profile</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'settings' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <FaCog />
-                <span>Settings</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('activity')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'activity' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <FaHistory />
-                <span>Activity</span>
-              </button>
-            </div>
-
-            <AnimatePresence mode="wait">
-              {activeTab === 'profile' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  <div className="bg-white rounded-xl shadow-md">
-                    <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Full Name</span>
-                              <span className="font-medium">{`${user.firstName} ${user.lastName}`}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Email</span>
-                              <span className="font-medium">{user.email}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-500">Role</span>
-                              <span className="font-medium capitalize">{user.role}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-semibold border-b pb-2">Account Settings</h3>
-                          <div className="space-y-4">
-                            {selectedFile && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500">Selected Image</span>
-                                <button
-                                  onClick={handleUpload}
-                                  disabled={uploadLoading}
-                                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
-                                >
-                                  {uploadLoading ? 'Uploading...' : 'Upload Photo'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              {activeTab === 'settings' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <button 
-                    onClick={() => navigate('/settings')}
-                    className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Update Profile Settings
-                  </button>
-                </motion.div>
-              )}
-              {activeTab === 'activity' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="bg-white rounded-xl p-6 shadow-md"
-                >
-                  <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-                  <p className="text-gray-500">No recent activity to show.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
-
-        {/* Notification Messages */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg"
-            >
-              {error}
-            </motion.div>
-          )}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"
-            >
-              {success}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
       </div>
+
+      {/* Notification Messages */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            {error}
+          </motion.div>
+        )}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            {success}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

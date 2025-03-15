@@ -4,6 +4,14 @@ import { SyncLoader } from "react-spinners";
 import layout from "./Assets/layout.jpg";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+import axios from 'axios';
+
+const ADMINGRIEVANCE = process.env.NODE_ENV === "development"
+    ? "http://localhost:7688/EmComplaint"
+    : "https://backend-hr4.jjm-manufacturing.com/Emcomplaint";
+
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -12,6 +20,11 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState();
   const [darkMode, setDarkMode] = useState(false);
   const [userName, setUserName] = useState("John Doe"); // Fixed initialization with a default value
+  const [complaintStats, setComplaintStats] = useState({
+    labels: [],
+    counts: []
+  });
+  const [dateFilter, setDateFilter] = useState('today'); // 'today', 'week', 'month'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +49,45 @@ const AdminDashboard = () => {
     }, 1000);
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    // Fetch complaints data
+    axios.get(ADMINGRIEVANCE)
+      .then(response => {
+        const counts = {};
+        const now = new Date();
+        const filterDate = new Date();
+
+        // Set filter date based on selection
+        switch(dateFilter) {
+          case 'yesterday':
+            filterDate.setDate(now.getDate() - 1);
+            filterDate.setHours(0, 0, 0, 0);
+            break;
+          case 'week':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            filterDate.setMonth(now.getMonth() - 1);
+            break;
+          default: // today
+            filterDate.setHours(0, 0, 0, 0);
+        }
+
+        response.data.forEach(complaint => {
+          const complaintDate = new Date(complaint.date);
+          if (complaintDate >= filterDate && complaint.ComplaintType && complaint.ComplaintType !== 'Unspecified') {
+            counts[complaint.ComplaintType] = (counts[complaint.ComplaintType] || 0) + 1;
+          }
+        });
+
+        setComplaintStats({
+          labels: Object.keys(counts),
+          counts: Object.values(counts)
+        });
+      })
+      .catch(error => console.error('Error fetching complaints:', error));
+  }, [dateFilter]); // Add dateFilter to dependency array
 
   const handleLogout = () => {
     try {
@@ -65,8 +117,66 @@ const AdminDashboard = () => {
     }
   }, [darkMode]);
 
-  // Define classes for dark and light modes
-  const themeClasses = darkMode
+  // Register ChartJS components
+  ChartJS.register(ArcElement, Tooltip, Legend);
+
+  const chartData = {
+    labels: complaintStats.labels,
+    datasets: [
+      {
+        data: complaintStats.counts,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          boxWidth: 15,
+          padding: 10,
+          font: {
+            size: 12
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: `Complaint Statistics (${
+          dateFilter === 'today' ? 'Today' :
+          dateFilter === 'yesterday' ? 'Yesterday' :
+          dateFilter === 'week' ? 'Last 7 Days' :
+          'Last 30 Days'
+        })`,
+        font: {
+          size: 14,
+          weight: 'bold'
+        },
+        padding: 15
+      }
+    }
+  };
+
+  // Define classes for dark and light modesss
+  const themeClasses = darkMode // Fixed typo in darkModess
     ? "bg-gray-900 text-white"
     : "bg-gradient-to-r from-gray-50 to-gray-200 text-gray-900";
   const sidebarClasses = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900";
@@ -133,78 +243,53 @@ const AdminDashboard = () => {
         {/* Sidebar Links */}
         <nav className="flex-grow">
           <ul className="space-y-5">
-            <AnimatePresence mode="wait">
-              <motion.li
-                key="grievances"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 50, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Grievances" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-              >
-                <Link
-                  to="/admin-grievance"
-                  className="flex items-center space-x-3"
-                  onClick={() => setActiveTab("Employee Grievances")}
+            <AnimatePresence>
+              {[
+                {
+                  key: "grievances",
+                  to: "/admin-grievance",
+                  icon: <FaExclamationCircle className="text-lg" />,
+                  text: "Employee Grievances"
+                },
+                {
+                  key: "suggestions",
+                  to: "/admin-employee-suggestion",
+                  icon: <FaRegCommentDots className="text-lg" />,
+                  text: "Employee Suggestions"
+                },
+                {
+                  key: "communication",
+                  to: "/admin-communication",
+                  icon: <FaEnvelope className="text-lg" />,
+                  text: "Communication Hub"
+                },
+                {
+                  key: "analytics",
+                  to: "/admin-workflow",
+                  icon: <FaChartBar className="text-lg" />,
+                  text: "Workforce Analytics"
+                }
+              ].map((item, index) => (
+                <motion.li
+                  key={item.key}
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 50, opacity: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className={`p-3 rounded-md transition duration-200 ${
+                    activeTab === item.text ? "bg-blue-200 text-blue-600" : buttonHoverClasses
+                  }`}
                 >
-                  <FaExclamationCircle className="text-lg" />
-                  <span>Employee Grievances</span>
-                </Link>
-              </motion.li>
-
-              <motion.li
-                key="suggestions"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 50, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-3 rounded-md transition duration-200 ${activeTab === "Employee Suggestions" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-              >
-                <Link
-                  to="/admin-employee-suggestion"
-                  className="flex items-center space-x-3"
-                  onClick={() => setActiveTab("Employee Suggestions")}
-                >
-                  <FaRegCommentDots className="text-lg" />
-                  <span>Employee Suggestions</span>
-                </Link>
-              </motion.li>
-
-              <motion.li
-                key="communication"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 50, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-3 rounded-md transition duration-200 ${activeTab === "Communication Hub" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-              >
-                <Link
-                  to="/admin-communication"
-                  className="flex items-center space-x-3"
-                  onClick={() => setActiveTab("Communication Hub")}
-                >
-                  <FaEnvelope className="text-lg" />
-                  <span>Communication Hub</span>
-                </Link>
-              </motion.li>
-
-              <motion.li
-                key="analytics"
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 50, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-3 rounded-md transition duration-200 ${activeTab === "Workforce Analytics" ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}
-              >
-                <Link
-                  to="/admin-workflow"
-                  className="flex items-center space-x-3"
-                  onClick={() => setActiveTab("Workforce Analytics")}
-                >
-                  <FaChartBar className="text-lg" />
-                  <span>Workforce Analytics</span>
-                </Link>
-              </motion.li>
+                  <Link
+                    to={item.to}
+                    className="flex items-center space-x-3"
+                    onClick={() => setActiveTab(item.text)}
+                  >
+                    {item.icon}
+                    <span>{item.text}</span>
+                  </Link>
+                </motion.li>
+              ))}
             </AnimatePresence>
           </ul>
         </nav>
@@ -332,6 +417,52 @@ const AdminDashboard = () => {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Complaints Chart with date filter */}
+        <div 
+          className={`mt-8 p-6 rounded-xl shadow-lg ${cardClasses} backdrop-blur-sm bg-opacity-90`}
+          style={{ 
+            width: '450px',
+            height: '300px',
+            marginLeft: '20px'
+          }}
+        >
+          <div className="mb-4 flex items-center gap-4">
+            <label className="font-medium text-sm">Show complaints for: </label>
+            <select 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="p-2 rounded border bg-white text-gray-800 text-sm"
+            >
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+            </select>
+          </div>
+          
+          <div style={{ height: '230px' }}>
+            <Pie 
+              data={chartData} 
+              options={{
+                ...chartOptions,
+                plugins: {
+                  ...chartOptions.plugins,
+                  title: {
+                    ...chartOptions.plugins.title,
+                    text: `Complaint Statistics (${
+                      dateFilter === 'today' ? 'Today' :
+                      dateFilter === 'yesterday' ? 'Yesterday' :
+                      dateFilter === 'week' ? 'Last 7 Days' :
+                      'Last 30 Days'
+                    })`
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
       </motion.main>
     </motion.div>
   );

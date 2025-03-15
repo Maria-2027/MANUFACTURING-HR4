@@ -11,7 +11,7 @@ const AdminWorkflow = () => {
   const navigate = useNavigate(); // Add this
   const [darkMode, setDarkMode] = useState(false);
   const [activeButton, setActiveButton] = useState("Employee Records"); // Changed initial state
-  const [employees, setEmployees] = useState([]);
+  const [employees, setEmployees] = useState([]); // Ensure it's initialized as an empty array
   const [activeTab, setActiveTab] = useState("Workforce Analytics");
   const [loading, setLoading] = useState(false); // Add loading state
   const [error, setError] = useState(null);      // Add error state
@@ -27,7 +27,13 @@ const AdminWorkflow = () => {
         setLoading(true);
         setError(null);
 
-        fetch(EMPLOYEERECORDS)
+        fetch(EMPLOYEERECORDS, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add any required authentication headers here
+            },
+        })
             .then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
@@ -35,12 +41,14 @@ const AdminWorkflow = () => {
                 return response.json();
             })
             .then((data) => {
-                setEmployees(data);
+                console.log('Fetched data:', data); // Add this for debugging
+                const employeeArray = Array.isArray(data) ? data : (data.data || []);
+                setEmployees(employeeArray);
                 setError(null);
             })
             .catch((error) => {
                 console.error("Error fetching employee records:", error);
-                setError(`Error: ${error.message}`);
+                setError(`Error fetching data: ${error.message}`);
                 setEmployees([]);
             })
             .finally(() => {
@@ -62,7 +70,9 @@ const AdminWorkflow = () => {
             return response.json();
         })
         .then((data) => {
-            setEmployees(data);
+            // Ensure data is an array
+            const employeeArray = Array.isArray(data) ? data : [];
+            setEmployees(employeeArray);
             setError(null);
         })
         .catch((error) => {

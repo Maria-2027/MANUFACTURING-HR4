@@ -1,34 +1,73 @@
 import express from 'express';
 import axios from 'axios';
 import { generateServiceToken } from "../middleware/gatewayTokenGenerator.js";
+import Employee from "../models/EmployeeHr1.js";
+import { predictTopEmployee } from "../ai/tensorFlow.js";
 
 const integrationRoutes = express.Router();
 
+
 integrationRoutes.get("/get-time-tracking", async (req, res) => {
     try {
-        const serviceToken = generateServiceToken();
-        
-        // Use the correct environment variable here
-        const apiUrl = process.env.APP_API_URL; 
-
-        if (!apiUrl) {
-            throw new Error("API URL is not defined in .env file");
-        }
-
-        const response = await axios.get(`${apiUrl}/hr1/get-time-tracking`, {
-            headers: {
-                Authorization: `Bearer ${serviceToken}`,
-            },
+      const serviceToken = generateServiceToken();
+      const apiUrl = process.env.APP_API_URL;
+  
+      if (!apiUrl) {
+        throw new Error("API URL is not defined in .env file");
+      }
+  
+      const response = await axios.get(`${apiUrl}/hr1/get-time-tracking`, {
+        headers: {
+          Authorization: `Bearer ${serviceToken}`,
+        },
+      });
+  
+      // Filter only approved entries
+      const filteredData = response.data
+        .filter((entry) => entry.status.toLowerCase() === "approved")
+        .map(
+          ({
+            time_in,
+            time_out,
+            employee_id,
+            employee_firstname,
+            employee_lastname,
+            position,
+            minutes_late,
+          }) => ({
+            time_in,
+            time_out,
+            employee_id,
+            employee_firstname,
+            employee_lastname,
+            position,
+            minutes_late,
+          })
+        );
+  
+      console.log("Filtered data:", filteredData);
+  
+      // Save filtered data to MongoDB
+      for (const entry of filteredData) {
+        // Check if record already exists (to prevent duplicates)
+        const existingRecord = await Employee.findOne({
+          employee_id: entry.employee_id,
+          time_in: entry.time_in, // Ensuring the same entry isn't duplicated
         });
-
-        console.log("Fetched data:", response.data);
-
-        res.status(200).json(response.data);
+  
+        if (!existingRecord) {
+          await Employee.create(entry);
+        }
+      }
+  
+      res
+        .status(200)
+        .json({ message: "Data successfully saved!", data: response.data });
     } catch (err) {
-        console.error("Error fetching data:", err);
-        res.status(500).json({ error: "Server Error", details: err.message });
+      console.error("Error fetching/saving data:", err);
+      res.status(500).json({ error: "Server Error", details: err.message });
     }
-});
+  });
 
 integrationRoutes.get("/hr4-announcement", async (req, res) => {
     try {
@@ -107,5 +146,36 @@ integrationRoutes.get("/trainings", async (req, res) => {
         res.status(500).json({ error: "Server Error", details: err.message });
     }
 });
+
+integrationRoutes.get("/top-employee", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+  
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({ error: "Start date and end date are required" });
+      }
+  
+      const employees = await Employee.find();
+  
+      if (employees.length === 0) {
+        return res.status(404).json({ message: "No employees found" });
+      }
+  
+      const topEmployee = await predictTopEmployee(employees, startDate, endDate);
+  
+      if (!topEmployee) {
+        return res
+          .status(404)
+          .json({ message: "No top employee found in the selected date range" });
+      }
+  
+      res.json(topEmployee);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      res.status(500).json({ error: "Server Error", details: err.message });
+    }
+  });
 
 export default integrationRoutes;

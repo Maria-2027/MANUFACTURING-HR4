@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 const EMCOMPLAINT = process.env.NODE_ENV === "development"
   ? "http://localhost:7688/api/auth/EmComplaint"
@@ -38,6 +39,7 @@ const EmComplaint = () => {  // Removed user prop
   const [showSuccess, setShowSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -111,16 +113,21 @@ const EmComplaint = () => {  // Removed user prop
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmedSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsError(false);
     setShowSuccess(false);
-    setIsLoading(true); // Add this
+    setIsLoading(true);
 
     if (!attachment) {
       setIsError(true);
       setNotification("Please attach a PDF file before submitting.");
-      setIsLoading(false); // Add this
+      setIsLoading(false);
       setTimeout(() => {
         setNotification("");
         setIsError(false);
@@ -135,12 +142,12 @@ const EmComplaint = () => {  // Removed user prop
       }
 
       const formData = {
-        firstName: firstName,  // Changed from FirstName
-        lastName: lastName,    // Changed from LastName
-        ComplaintType: complaintType, // Add this line
+        firstName: firstName,
+        lastName: lastName,
+        ComplaintType: complaintType,
         ComplaintDescription: complaint,
         File: attachmentUrl,
-        date: new Date().toISOString() // Adding date field
+        date: new Date().toISOString()
       };
 
       const response = await axios.post(
@@ -154,12 +161,9 @@ const EmComplaint = () => {  // Removed user prop
       );
 
       if (response.data) {
-        // Only show the modal success message
         setShowSuccess(true);
-        setNotification(""); // Clear any existing notification
+        setNotification("");
         setIsError(false);
-        
-        // Reset form
         setComplaint("");
         setAttachment(null);
         
@@ -184,156 +188,289 @@ const EmComplaint = () => {  // Removed user prop
         setIsError(false);
       }, 3000);
     } finally {
-      setIsLoading(false); // Add this
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto bg-white rounded-lg shadow-md">
-      {/* Show Success Modal Only when showSuccess is true */}
-      {showSuccess && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-8 rounded-xl shadow-2xl transform transition-all duration-500 ease-in-out animate-bounce">
-            <div className="text-center">
-              <svg
-                className="mx-auto h-16 w-16 text-green-500 mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                ></path>
-              </svg>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Complaint Submitted Successfully!
-              </h2>
-              <p className="text-gray-600">
-                Thank you for your feedback. We will review it shortly.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex space-x-6">
-        <div className="w-1/2 pr-6">
-          <h1 className="text-3xl font-bold text-blue-600 mb-4">Employee Complaint</h1>
-
-          {/* Show Notification Banner Only for Errors */}
-          {isError && notification && (
-            <div className="p-4 mb-6 text-center text-white rounded-lg shadow-xl bg-red-600">
-              {notification}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="block text-base font-medium text-gray-700 mb-1">First Name</label>
-              <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
-                {firstName || 'Loading...'}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-base font-medium text-gray-700 mb-1">Last Name</label>
-              <div className="w-full p-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-gray-700">
-                {lastName || 'Loading...'}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-base font-medium text-gray-700 mb-1">Complaint Type</label>
-              <select
-                className="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
-                value={complaintType}
-                onChange={(e) => setComplaintType(e.target.value)}
-                required
-              >
-                <option value="">Select a complaint type</option>
-                <option value="Salary issue">Salary issue</option>
-                <option value="Benefits issue">Benefits issue</option>
-                <option value="Workplace Conflict">Workplace Conflict</option>
-                <option value="Harassment">Harassment</option>
-                <option value="Unfair treatment">Unfair treatment</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-base font-medium text-gray-700 mb-1">Complaint Description</label>
-              <textarea
-                className="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
-                rows={3}
-                placeholder="Describe your complaint..."
-                value={complaint}
-                onChange={(e) => setComplaint(e.target.value)}
-                required
-              ></textarea>
-            </div>
-
-            <div>
-              <label className="block text-base font-medium text-gray-700 mb-1">
-                Attachment (Required) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className="w-full border-2 border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-md"
-                accept=".pdf"
-                required
-              />
-              <small className="text-sm text-gray-500">PDF only. Max: 10MB</small>
-            </div>
-
-            <button
-              type="submit"
-              disabled={!attachment || isLoading}
-              className="p-4 w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl 
-                shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] transition-all duration-300
-                hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.4)] text-base font-semibold
-                flex items-center justify-center space-x-4 overflow-hidden relative
-                before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent 
-                before:via-white before:to-transparent before:opacity-20 before:hover:translate-x-full
-                before:transition-transform before:duration-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    <>
+      {/* Confirmation Dialog */}
+      <AnimatePresence>
+        {showConfirmDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="bg-white p-6 rounded-xl shadow-xl"
             >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              <h3 className="text-xl font-semibold mb-4">Confirm Submission</h3>
+              <p className="text-gray-600 mb-6">Are you sure you want to submit this complaint?</p>
+              <div className="flex space-x-4 justify-end">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmedSubmit}
+                  className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                >
+                  Submit
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: "spring", damping: 15 }}
+              className="bg-white p-8 rounded-xl shadow-2xl"
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                >
+                  <svg
+                    className="mx-auto h-16 w-16 text-green-500 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <motion.path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
                     />
                   </svg>
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <span>Submit Complaint</span>
-              )}
-            </button>
-          </form>
-        </div>
+                </motion.div>
+                <motion.h2
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-2xl font-bold text-gray-900 mb-4"
+                >
+                  Complaint Submitted Successfully!
+                </motion.h2>
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-gray-600"
+                >
+                  Thank you for your feedback. We will review it shortly.
+                </motion.p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="w-1/2 pl-6 flex items-center">
-          <p className="text-lg text-gray-700 leading-relaxed">
-            We highly value your feedback. Please describe the issue you're facing. 
-            Attach relevant files, and we will address your concerns promptly.
-          </p>
-        </div>
-      </div>
-    </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="p-4 max-w-4xl mx-auto mt-20 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-lg transform hover:scale-[1.01] transition-all duration-300"
+      >
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex space-x-6"
+        >
+          <motion.div 
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-1/2 pr-6"
+          >
+            <motion.h1 
+              initial={{ y: -20 }}
+              animate={{ y: 0 }}
+              className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-500 mb-6 hover:scale-105 transition-transform"
+            >
+              Employee Complaint
+            </motion.h1>
+
+            {/* Error Notification */}
+            <AnimatePresence>
+              {isError && notification && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="p-4 mb-6 text-center text-white rounded-lg shadow-xl bg-red-600"
+                >
+                  {notification}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.form 
+              onSubmit={handleSubmit} 
+              className="space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              {/* Form fields with staggered animations */}
+              <motion.div
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+              >
+                <label className="block text-base font-medium text-gray-700 mb-1">First Name</label>
+                <div className="w-full p-3 border-2 border-gray-300 rounded-lg bg-gray-50 text-gray-700 shadow-inner">
+                  {firstName || 'Loading...'}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+              >
+                <label className="block text-base font-medium text-gray-700 mb-1">Last Name</label>
+                <div className="w-full p-3 border-2 border-gray-300 rounded-lg bg-gray-50 text-gray-700 shadow-inner">
+                  {lastName || 'Loading...'}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+              >
+                <label className="block text-base font-medium text-gray-700 mb-1">Complaint Type</label>
+                <select
+                  className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-sm hover:border-blue-400 transition-colors"
+                  value={complaintType}
+                  onChange={(e) => setComplaintType(e.target.value)}
+                  required
+                >
+                  <option value="">Select a complaint type</option>
+                  <option value="Salary issue">Salary issue</option>
+                  <option value="Benefits issue">Benefits issue</option>
+                  <option value="Workplace Conflict">Workplace Conflict</option>
+                  <option value="Harassment">Harassment</option>
+                  <option value="Unfair treatment">Unfair treatment</option>
+                </select>
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+              >
+                <label className="block text-base font-medium text-gray-700 mb-1">Complaint Description</label>
+                <textarea
+                  className="w-full p-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-sm hover:border-blue-400 transition-colors"
+                  rows={3}
+                  placeholder="Describe your complaint..."
+                  value={complaint}
+                  onChange={(e) => setComplaint(e.target.value)}
+                  required
+                ></textarea>
+              </motion.div>
+
+              <motion.div
+                initial={{ x: -30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="transform transition-all duration-300 hover:scale-[1.02]"
+              >
+                <label className="block text-base font-medium text-gray-700 mb-1">
+                  Attachment (Required) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="w-full border-2 border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-sm hover:border-blue-400 transition-colors"
+                  accept=".pdf"
+                  required
+                />
+                <small className="text-sm text-gray-500">PDF only. Max: 10MB</small>
+              </motion.div>
+
+              <motion.button
+                type="submit"
+                disabled={!attachment || isLoading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="p-4 w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-xl
+                  shadow-lg transition-all duration-300 hover:shadow-2xl
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                  relative overflow-hidden group"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Submitting...</span>
+                  </div>
+                ) : (
+                  <span>Submit Complaint</span>
+                )}
+              </motion.button>
+            </motion.form>
+          </motion.div>
+
+          <motion.div 
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-1/2 pl-6 flex items-center"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="p-6 bg-gradient-to-br from-blue-50 to-teal-50 rounded-xl shadow-inner"
+            >
+              <p className="text-lg text-gray-700 leading-relaxed">
+                We highly value your feedback. Please describe the issue you're facing. 
+                Attach relevant files, and we will address your concerns promptly.
+              </p>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </>
   );
 };
 

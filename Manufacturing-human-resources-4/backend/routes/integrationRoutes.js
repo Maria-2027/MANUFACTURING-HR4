@@ -72,8 +72,6 @@ integrationRoutes.get("/get-time-tracking", async (req, res) => {
 integrationRoutes.get("/hr4-announcement", async (req, res) => {
     try {
         const serviceToken = generateServiceToken();
-        
-        // Use the correct environment variable here
         const apiUrl = process.env.APP_API_URL; 
 
         if (!apiUrl) {
@@ -86,9 +84,25 @@ integrationRoutes.get("/hr4-announcement", async (req, res) => {
             },
         });
 
-        console.log("Fetched data:", response.data);
+        // Get all announcements from local database to merge likes data
+        const localAnnouncements = await Announcement.find();
+        
+        const mergedAnnouncements = response.data.map(apiAnn => {
+            const localAnn = localAnnouncements.find(local => 
+                local.title === apiAnn.title && local.content === apiAnn.content
+            );
+            
+            return {
+                ...apiAnn,
+                _id: localAnn?._id || apiAnn._id,
+                likes: localAnn?.likes || 0,
+                likedBy: localAnn?.likedBy || [],
+                comments: localAnn?.comments || []
+            };
+        });
 
-        res.status(200).json(response.data);
+        console.log("Merged announcements with likes:", mergedAnnouncements);
+        res.status(200).json(mergedAnnouncements);
     } catch (err) {
         console.error("Error fetching data:", err);
         res.status(500).json({ error: "Server Error", details: err.message });
@@ -96,20 +110,52 @@ integrationRoutes.get("/hr4-announcement", async (req, res) => {
 });
 
 integrationRoutes.patch('/hr4-announcement/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
+    try {
+        const { id } = req.params;
+        const { action, userId, userName } = req.body;
 
-    const updatedAnnouncement = await Announcement.findByIdAndUpdate(id, updateData, { new: true });
+        let announcement = await Announcement.findById(id);
+        if (!announcement) {
+            // If announcement doesn't exist in local DB, create it
+            announcement = new Announcement({
+                _id: id,
+                title: req.body.title,
+                content: req.body.content,
+                likes: 0,
+                likedBy: [],
+                comments: []
+            });
+        }
 
-    if (!updatedAnnouncement) {
-      return res.status(404).json({ error: 'Announcement not found' });
+        // Initialize if they don't exist
+        announcement.likes = announcement.likes || 0;
+        announcement.likedBy = announcement.likedBy || [];
+
+        if (action === 'like') {
+            if (!announcement.likedBy.includes(userId)) {
+                announcement.likes += 1;
+                announcement.likedBy.push(userId);
+            }
+        } else if (action === 'unlike') {
+            if (announcement.likedBy.includes(userId)) {
+                announcement.likes = Math.max(0, announcement.likes - 1);
+                announcement.likedBy = announcement.likedBy.filter(id => id !== userId);
+            }
+        }
+
+        const savedAnnouncement = await announcement.save();
+        
+        // Return enhanced response
+        res.json({
+            ...savedAnnouncement.toObject(),
+            isLiked: savedAnnouncement.likedBy.includes(userId),
+            likeCount: savedAnnouncement.likes,
+            userLiked: true
+        });
+    } catch (error) {
+        console.error('Error updating announcement:', error);
+        res.status(500).json({ error: 'Failed to update announcement', details: error.message });
     }
-
-    res.json(updatedAnnouncement);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update announcement', details: error.message });
-  }
 });
 
 integrationRoutes.get("/get-employee-violation", async (req, res) => {

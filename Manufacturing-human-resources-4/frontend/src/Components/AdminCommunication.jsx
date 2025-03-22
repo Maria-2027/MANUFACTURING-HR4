@@ -59,6 +59,8 @@ const AdminCommunication = () => {
   const [likes, setLikes] = useState({});
   const [comments, setComments] = useState({});
   const [showCommentInput, setShowCommentInput] = useState({});
+  const [userLikes, setUserLikes] = useState({}); // Add this state
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleLogout = () => {
 
@@ -70,50 +72,132 @@ const AdminCommunication = () => {
     const fetchAnnouncements = async () => {
       try {
         const response = await axios.get(ANNOUNCEMENT);
-        console.log("Fetched data from backend:", response.data);
-
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          setAnnouncements(response.data);
-        } else {
-          console.log("No valid announcements found.");
-          setAnnouncements([]);
-        }
-      } catch (error) {
-        console.error("❌ Error fetching announcements:", error);
-        setAnnouncements([]);
-      } finally {
-        setIsLoading(false); // Stop loading when the data is fetched
-      }
-    };
-
-    fetchAnnouncements();
-  }, []);
-
-  // Add polling for real-time updates
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await axios.get(ANNOUNCEMENT);
         if (Array.isArray(response.data) && response.data.length > 0) {
           setAnnouncements(response.data);
           
           // Update likes and comments from the response
           const newLikes = {};
           const newComments = {};
+          const newUserLikes = {};
+          
           response.data.forEach(announcement => {
             newLikes[announcement._id] = announcement.likes || 0;
             newComments[announcement._id] = announcement.comments || [];
+            newUserLikes[announcement._id] = announcement.likedBy || [];
           });
+          
           setLikes(newLikes);
           setComments(newComments);
+          setUserLikes(newUserLikes);
         }
       } catch (error) {
-        console.error('Error updating data:', error);
+        console.error('Error fetching announcements:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }, 5000);
+    };
+
+    // Initial fetch
+    fetchAnnouncements();
+
+    // Poll every 30 seconds instead of 5 seconds
+    const interval = setInterval(fetchAnnouncements, 30000);
 
     return () => clearInterval(interval);
+  }, []); // Remove dependencies array
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      const userRole = localStorage.getItem('userRole');
+      
+      if (isAuthenticated === 'true' && userRole === 'Admin') {
+        setCurrentUser({
+          id: 'admin-user',
+          name: 'Admin User',
+          username: 'admin',
+          isAdmin: true
+        });
+      }
+    };
+
+    checkAuth();
   }, []);
+
+  const getUser = () => currentUser;
+
+  const handleLike = async (announcementId, event) => {
+    event.stopPropagation();
+    
+    if (!currentUser) {
+      alert('Please login as admin to like announcements');
+      return;
+    }
+
+    try {
+      const announcement = announcements.find(a => a._id === announcementId);
+      const isLiked = announcement.likedBy?.includes(currentUser.id);
+      const action = isLiked ? 'unlike' : 'like';
+
+      // Optimistically update UI
+      setAnnouncements(prevAnnouncements => 
+        prevAnnouncements.map(ann => {
+          if (ann._id === announcementId) {
+            return {
+              ...ann,
+              likes: (ann.likes || 0) + (isLiked ? -1 : 1),
+              likedBy: isLiked 
+                ? (ann.likedBy || []).filter(id => id !== currentUser.id)
+                : [...(ann.likedBy || []), currentUser.id]
+            };
+          }
+          return ann;
+        })
+      );
+
+      const response = await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
+        action,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        title: announcement.title,
+        content: announcement.content
+      });
+
+      if (response.data) {
+        // Update the specific announcement with server response
+        setAnnouncements(prevAnnouncements => 
+          prevAnnouncements.map(ann => 
+            ann._id === announcementId ? {
+              ...ann,
+              likes: response.data.likes,
+              likedBy: response.data.likedBy || []
+            } : ann
+          )
+        );
+
+        // Update likes state
+        setLikes(prev => ({
+          ...prev,
+          [announcementId]: response.data.likes
+        }));
+
+        // Update userLikes state
+        setUserLikes(prev => ({
+          ...prev,
+          [announcementId]: response.data.likedBy || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+      // Revert optimistic update on error
+      const originalAnnouncement = announcements.find(a => a._id === announcementId);
+      setAnnouncements(prevAnnouncements => 
+        prevAnnouncements.map(ann => 
+          ann._id === announcementId ? originalAnnouncement : ann
+        )
+      );
+    }
+  };
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -129,23 +213,6 @@ const AdminCommunication = () => {
 
   const handleCloseModal = () => {
     setSelectedAnnouncement(null);
-  };
-
-  const handleLike = async (announcementId) => {
-    try {
-      // Update locally first
-      setLikes(prev => ({
-        ...prev,
-        [announcementId]: (prev[announcementId] || 0) + 1
-      }));
-
-      // Update in backend
-      await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
-        likes: (likes[announcementId] || 0) + 1
-      });
-    } catch (error) {
-      console.error('Error updating likes:', error);
-    }
   };
 
   const handleComment = async (announcementId, comment) => {
@@ -274,11 +341,40 @@ const AdminCommunication = () => {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-4">
                         <button 
-                          onClick={() => handleLike(announcement._id)}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(announcement._id, e);
+                          }}
+                          className={`flex items-center space-x-2 transition-colors ${
+                            announcement.likedBy?.includes(currentUser?.id)
+                              ? 'text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full'
+                              : 'text-gray-600 hover:text-blue-600'
+                          }`}
                         >
-                          <FaThumbsUp />
-                          <span>{likes[announcement._id] || 0} Agree</span>
+                          <FaThumbsUp className={
+                            announcement.likedBy?.includes(currentUser?.id)
+                              ? 'transform scale-110'
+                              : ''
+                          } />
+                          <span>
+                            {announcement.likes || 0}
+                            {announcement.likedBy?.includes(currentUser?.id) 
+                              ? ' Liked'
+                              : announcement.likes > 0 
+                                ? ' Likes'
+                                : ' Like'
+                            }
+                          </span>
+                          {announcement.likes > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {announcement.likedBy?.includes(currentUser?.id)
+                                ? announcement.likes > 1
+                                  ? ` (You and ${announcement.likes - 1} other${announcement.likes > 2 ? 's' : ''})`
+                                  : ' (You liked this)'
+                                : ` (${announcement.likes} like${announcement.likes > 1 ? 's' : ''})`
+                              }
+                            </span>
+                          )}
                         </button>
                         <button 
                           onClick={() => setShowCommentInput(prev => ({

@@ -61,6 +61,8 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.options("*", cors());
+
 
 // Routes
 app.use("/api/auth", userRoutes);

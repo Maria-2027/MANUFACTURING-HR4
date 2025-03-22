@@ -149,21 +149,22 @@ const AdminDashboard = () => {
                   {data.map((violation) => (
                     <tr key={violation._id} className="border-b hover:bg-gray-50">
                       <td className="px-4 py-2">
-                        {violation.userId.firstName} {violation.userId.lastName}
+                        {violation.user?.firstName || 'N/A'} {violation.user?.lastName || ''}
                       </td>
-                      <td className="px-4 py-2">{violation.penaltyLevel.violationType}</td>
-                      <td className="px-4 py-2">{violation.penaltyLevel.penaltyLevel}</td>
-                      <td className="px-4 py-2">{violation.penaltyLevel.action}</td>
+                      <td className="px-4 py-2">{violation.penaltyLevel?.violationType || 'Pending Review'}</td>
+                      <td className="px-4 py-2">{violation.penaltyLevel?.penaltyLevel || 'Pending'}</td>
+                      <td className="px-4 py-2">{violation.penaltyLevel?.action || 'No Action Yet'}</td>
                       <td className="px-4 py-2">
-                        {new Date(violation.violationDate).toLocaleDateString()}
+                        {violation.violationDate ? new Date(violation.violationDate).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-4 py-2">
                         <span className={`px-2 py-1 rounded-full text-sm ${
                           violation.status === 'active' ? 'bg-red-100 text-red-800' : 
                           violation.status === 'resolved' ? 'bg-green-100 text-green-800' : 
+                          violation.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {violation.status}
+                          {violation.status || 'N/A'}
                         </span>
                       </td>
                     </tr>

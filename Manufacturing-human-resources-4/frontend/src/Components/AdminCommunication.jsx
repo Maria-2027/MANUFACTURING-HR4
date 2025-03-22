@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon, FaBullhorn } from "react-icons/fa";
+import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon, FaBullhorn, FaBookmark, FaEye, FaThumbsUp, FaComment } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -12,21 +12,41 @@ const ANNOUNCEMENT = process.env.NODE_ENV === "development"
 const timeAgo = (timestamp) => {
   const now = new Date();
   const postDate = new Date(timestamp);
+  
+  // Check if the date is valid
+  if (isNaN(postDate.getTime())) {
+    return "Invalid date";
+  }
+
   const diffInMs = now - postDate;
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
+  // If more than 7 days old, show the actual date
+  if (diffInDays > 7) {
+    return postDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  // If more than 1 day old
   if (diffInDays > 0) {
-    return `${diffInDays} day(s) ago`;
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   }
+  // If more than 1 hour old
   if (diffInHours > 0) {
-    return `${diffInHours} hour(s) ago`;
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
   }
+  // If more than 1 minute old
   if (diffInMinutes > 0) {
-    return `${diffInMinutes} minute(s) ago`;
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
   }
-  return "Just now"; // if it's less than a minute
+  // If less than a minute old
+  return "Just now";
 };
 
 const AdminCommunication = () => {
@@ -36,6 +56,9 @@ const AdminCommunication = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [likes, setLikes] = useState({});
+  const [comments, setComments] = useState({});
+  const [showCommentInput, setShowCommentInput] = useState({});
 
   const handleLogout = () => {
 
@@ -66,6 +89,32 @@ const AdminCommunication = () => {
     fetchAnnouncements();
   }, []);
 
+  // Add polling for real-time updates
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(ANNOUNCEMENT);
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          setAnnouncements(response.data);
+          
+          // Update likes and comments from the response
+          const newLikes = {};
+          const newComments = {};
+          response.data.forEach(announcement => {
+            newLikes[announcement._id] = announcement.likes || 0;
+            newComments[announcement._id] = announcement.comments || [];
+          });
+          setLikes(newLikes);
+          setComments(newComments);
+        }
+      } catch (error) {
+        console.error('Error updating data:', error);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -80,6 +129,57 @@ const AdminCommunication = () => {
 
   const handleCloseModal = () => {
     setSelectedAnnouncement(null);
+  };
+
+  const handleLike = async (announcementId) => {
+    try {
+      // Update locally first
+      setLikes(prev => ({
+        ...prev,
+        [announcementId]: (prev[announcementId] || 0) + 1
+      }));
+
+      // Update in backend
+      await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
+        likes: (likes[announcementId] || 0) + 1
+      });
+    } catch (error) {
+      console.error('Error updating likes:', error);
+    }
+  };
+
+  const handleComment = async (announcementId, comment) => {
+    if (!comment.trim()) return;
+    
+    try {
+      const newComment = {
+        text: comment,
+        timestamp: new Date().toISOString()
+      };
+
+      // Update locally first
+      const updatedComments = [
+        ...(comments[announcementId] || []),
+        newComment
+      ];
+
+      setComments(prev => ({
+        ...prev,
+        [announcementId]: updatedComments
+      }));
+
+      // Update in backend
+      await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
+        comments: updatedComments
+      });
+
+      setShowCommentInput(prev => ({
+        ...prev,
+        [announcementId]: false
+      }));
+    } catch (error) {
+      console.error('Error posting comment:', error);
+    }
   };
 
   return (
@@ -120,40 +220,165 @@ const AdminCommunication = () => {
                  </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Communication Hub</h1>
+      <main className="flex-1 p-6 overflow-auto bg-gray-50">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Company Announcements</h1>
+            <div className="text-sm text-gray-500">
+              Showing {announcements.length} announcements
+            </div>
+          </div>
 
-        {/* Announcements Section */}
-        <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-          <h2 className="text-xl font-semibold flex items-center mb-4 text-yellow-500">
-            <FaBullhorn className="mr-2" /> Announcements
-          </h2>
           {isLoading ? (
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center min-h-[200px]">
               <div className="animate-spin border-t-4 border-blue-600 rounded-full w-12 h-12"></div>
-              <p className="ml-4 text-lg text-gray-600">Loading...</p>
             </div>
           ) : announcements.length > 0 ? (
-            <ul className="space-y-3">
+            <div className="space-y-6">
               {announcements.map((announcement, index) => (
-                <li
-                  key={index}
-                  className="p-5 border rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer"
-                  onClick={() => handleAnnouncementClick(announcement)}
-                >
-                  <h3 className="font-semibold text-lg text-gray-900">{announcement.title}</h3>
-                  <p className="text-sm text-gray-600 mt-2">{announcement.content}</p>
-                  <p className="text-xs text-gray-500 mt-2">{timeAgo(announcement.createdAt)}</p>
-                </li>
+                <div key={index} 
+                     className="bg-white rounded-lg border border-gray-200 hover:border-blue-200 transition-all duration-200">
+                  {/* Header */}
+                  <div className="p-5 border-b border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                          <FaBullhorn className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-900">{announcement.title}</h3>
+                          <div className="text-sm text-gray-500">
+                            Posted {timeAgo(announcement.date)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button className="p-2 hover:bg-gray-50 rounded-full" title="Save">
+                          <FaBookmark className="text-gray-400 hover:text-blue-500" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5" onClick={() => handleAnnouncementClick(announcement)}>
+                    <p className="text-gray-600 leading-relaxed">
+                      {announcement.content.length > 200 
+                        ? `${announcement.content.substring(0, 200)}...` 
+                        : announcement.content}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-5 py-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-4">
+                        <button 
+                          onClick={() => handleLike(announcement._id)}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+                        >
+                          <FaThumbsUp />
+                          <span>{likes[announcement._id] || 0} Agree</span>
+                        </button>
+                        <button 
+                          onClick={() => setShowCommentInput(prev => ({
+                            ...prev,
+                            [announcement._id]: !prev[announcement._id]
+                          }))}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+                        >
+                          <FaComment />
+                          <span>{(comments[announcement._id] || []).length} Comments</span>
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => handleAnnouncementClick(announcement)}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Read More
+                      </button>
+                    </div>
+
+                    {/* Comment Section */}
+                    {showCommentInput[announcement._id] && (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            placeholder="Add a comment..."
+                            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleComment(announcement._id, e.target.value);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                          <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            onClick={(e) => {
+                              const input = e.target.previousSibling;
+                              handleComment(announcement._id, input.value);
+                              input.value = '';
+                            }}
+                          >
+                            Comment
+                          </button>
+                        </div>
+                        {/* Display Comments */}
+                        {(comments[announcement._id] || []).map((comment, i) => (
+                          <div key={i} className="bg-gray-50 p-3 rounded-lg">
+                            <p className="text-gray-600">{comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p className="text-gray-500">No announcements available.</p>
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <FaBullhorn className="mx-auto text-4xl text-gray-400 mb-4" />
+              <p className="text-gray-500 text-lg">No announcements available.</p>
+            </div>
           )}
         </div>
       </main>
 
-      {/* Dark Mode Toggle Button */}
+      {/* Modal */}
+      {selectedAnnouncement && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex justify-center items-center z-50" 
+             onClick={handleCloseModal}>
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl" 
+               onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                    <FaBullhorn className="text-blue-600 text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{selectedAnnouncement.title}</h3>
+                    <p className="text-sm text-gray-500">Posted {timeAgo(selectedAnnouncement.date)}</p>
+                  </div>
+                </div>
+                <button onClick={handleCloseModal} 
+                        className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full">
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">
+                {selectedAnnouncement.content}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dark Mode Toggle */}
       <div className="absolute top-5 right-5">
         <button
           onClick={toggleDarkMode}
@@ -162,29 +387,6 @@ const AdminCommunication = () => {
           {darkMode ? <FaSun className="text-yellow-500 text-xl" /> : <FaMoon className="text-gray-800 text-xl" />}
         </button>
       </div>
-
-      {/* Announcement Modal */}
-      {selectedAnnouncement && (
-        <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50"
-          onClick={handleCloseModal}
-        >
-          <div
-            className="bg-white p-6 rounded-lg shadow-lg w-96"
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-          >
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-2 right-2 text-lg text-gray-700"
-            >
-              X
-            </button>
-            <h3 className="text-2xl font-semibold mb-4">{selectedAnnouncement.title}</h3>
-            <p className="text-sm text-gray-600">{selectedAnnouncement.content}</p>
-            <p className="text-xs text-gray-500 mt-2">{timeAgo(selectedAnnouncement.createdAt)}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

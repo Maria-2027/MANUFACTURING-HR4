@@ -31,6 +31,7 @@ const EmployeeSuggestionBox = () => {
   const [notification, setNotification] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [category, setCategory] = useState('');
 
   const fetchProfile = async () => {
     try {
@@ -59,7 +60,11 @@ const EmployeeSuggestionBox = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const suggestionData = { fullName: `${firstName} ${lastName}`, suggestion };
+    const suggestionData = {
+      fullName: `${firstName} ${lastName}`,
+      suggestion,
+      category
+    };
 
     try {
       const response = await fetch(EMSUGGEST, {
@@ -81,6 +86,18 @@ const EmployeeSuggestionBox = () => {
       setIsLoading(false);
     }
   };
+
+  const suggestionCategories = [
+    { value: '', label: 'Select a category' },
+    { value: 'work-tools', label: 'Work Tools & Equipment' },
+    { value: 'training-development', label: 'Training & Development' },
+    { value: 'communication', label: 'Communication Improvement' },
+    { value: 'workplace-comfort', label: 'Workplace Comfort & Safety' },
+    { value: 'employee-activities', label: 'Employee Activities & Events' },
+    { value: 'team-building', label: 'Team Building Ideas' },
+    { value: 'work-efficiency', label: 'Work Efficiency Ideas' },
+    { value: 'other', label: 'Other Suggestions' },
+  ];
 
   return (
     <motion.div 
@@ -166,6 +183,24 @@ const EmployeeSuggestionBox = () => {
           <motion.div
             initial={{ x: -30, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.45 }}
+          >
+            <label className="block text-lg font-medium text-gray-700 mb-2">Suggestion Category</label>
+            <select
+              className="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 transition-all duration-300 ease-in-out shadow-md"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              {suggestionCategories.map((cat) => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+          </motion.div>
+
+          <motion.div
+            initial={{ x: -30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
             <textarea
@@ -207,12 +242,16 @@ const EmployeeSuggestionBox = () => {
         transition={{ duration: 0.5, delay: 0.3 }}
         className="w-1/2 p-8 ml-8 text-gray-700"
       >
-        <h2 className="text-3xl font-semibold mb-4">What is the Employee Suggestion Box?</h2>
+        <h2 className="text-3xl font-semibold mb-4">Share Your Ideas</h2>
         <p className="text-lg mb-4">
-          The Employee Suggestion Box is a platform where employees can share their ideas, feedback, and suggestions to improve workplace culture, processes, and overall employee experience at JJM Manufacturing. This is an important channel for ensuring every employee has a voice in shaping the company's future.
+          Your voice matters! This is your platform to share ideas that could make our 
+          workplace better. Whether it's about improving your work tools, suggesting new 
+          training programs, or ideas for team activities - we want to hear from you.
         </p>
         <p className="text-lg">
-          Suggestions may include anything from workplace improvements, new processes, or ideas that could help the company grow and enhance productivity. All submissions are reviewed by the HR team to ensure that each suggestion is taken into consideration for potential implementation.
+          Great suggestions could be anything from requesting better equipment for your work, 
+          proposing new team-building activities, or sharing ideas that could make your 
+          daily tasks easier and more efficient. Help us create a better workplace together!
         </p>
       </motion.div>
     </motion.div>

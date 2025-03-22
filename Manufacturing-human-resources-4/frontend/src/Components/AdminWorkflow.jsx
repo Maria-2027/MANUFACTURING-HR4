@@ -123,6 +123,11 @@ const AdminWorkflow = () => {
     navigate('/admin-hr2-learning');
   };
 
+  const handleTopEmployee = () => {
+    setActiveButton("Top Employee");
+    navigate('/admin-top-employee');  // Make sure this route exists
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
@@ -182,6 +187,12 @@ const AdminWorkflow = () => {
               className={buttonClasses(activeButton === "Learning and Development")}
             >
               Learning and Development
+            </button>
+            <button
+              onClick={handleTopEmployee}
+              className={buttonClasses(activeButton === "Top Employee")}
+            >
+              Top Employee
             </button>
           </div>
 

@@ -31,7 +31,7 @@ app.use(express.json());
 app.use(cors({
   origin: ["http://localhost:5173", "https://hr4.jjm-manufacturing.com"],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST","PATCH", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.urlencoded({ extended: true })); // Ensure JSON parsing

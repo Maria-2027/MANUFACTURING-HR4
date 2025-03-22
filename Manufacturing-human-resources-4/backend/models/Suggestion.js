@@ -5,6 +5,10 @@ const suggestionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  category: {
+    type: String,
+    required: true,
+  },
   suggestion: {
     type: String,
     required: true,
@@ -13,6 +17,18 @@ const suggestionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: String,
+    enum: ['PENDING', 'APPROVED', 'DECLINED'],
+    default: 'PENDING'
+  },
+  approvedDate: {
+    type: Date
+  },
+  isApproved: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const Suggestion = mongoose.model('Suggestion', suggestionSchema);

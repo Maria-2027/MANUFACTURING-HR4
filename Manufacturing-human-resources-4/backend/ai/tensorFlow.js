@@ -5,20 +5,26 @@ function normalizeData(data, min, max) {
   return data.map((val) => (val - min) / (max - min) || 0); // Avoid NaN if all values are the same
 }
 
-export async function predictTopEmployee(employees, startDate, endDate) {
+export async function predictTopEmployee(employeesData, startDate, endDate) {
+  // Ensure employeesData is an array
+  const employees = Array.isArray(employeesData) ? employeesData : [employeesData];
+  
   if (employees.length === 0) return null;
 
   // Convert date range to Date objects
   const start = new Date(startDate);
   const end = new Date(endDate);
 
+  // Filter out null or undefined entries
+  const validEmployees = employees.filter(e => e && e.time_in);
+
   // Filter employees based on the date range
-  const filteredEmployees = employees.filter((e) => {
+  const filteredEmployees = validEmployees.filter((e) => {
     const timeIn = new Date(e.time_in);
     return timeIn >= start && timeIn <= end;
   });
 
-  if (filteredEmployees.length === 0) return null; // No data within the range
+  if (filteredEmployees.length === 0) return null;
 
   // Aggregate totalHours and minutes_late per employee within the date range
   const employeeMap = new Map();

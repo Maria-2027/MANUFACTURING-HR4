@@ -21,6 +21,7 @@ import AdminCommunication from "./Components/AdminCommunication";
 import AdminWorkflow from "./Components/AdminWorkflow";
 import AdminHr3 from "./Components/AdminHr3Compensate";
 import AdminHr2 from "./Components/AdminHr2Learning";
+import TopEmployee from "./Components/TopEmployee";
 import ProtectedRoutes from "./utils/protectedRoutes";
 import { Toaster } from 'react-hot-toast';
 
@@ -28,7 +29,7 @@ const App = () => {
   const location = useLocation();
 
   const hideSidebarAndSearchBar = [
-    "/login", "/signup", "/ForgotPassword", "/account", "/admin", "/admin-dashboard", "/admin-grievance", "/admin-employee-suggestion", "/admin-communication", "/admin-workflow", "/admin-compensate", "/admin-hr2-learning"
+    "/login", "/signup", "/ForgotPassword", "/account", "/admin", "/admin-dashboard", "/admin-grievance", "/admin-employee-suggestion", "/admin-communication", "/admin-workflow", "/admin-compensate", "/admin-hr2-learning", "/admin-top-employee"
   ].includes(location.pathname);
 
   return (
@@ -61,6 +62,7 @@ const App = () => {
             <Route path="/admin-workflow" element={<AdminWorkflow />} />
             <Route path="/admin-compensate" element={<AdminHr3 />} />
             <Route path="/admin-hr2-learning" element={<AdminHr2 />} />
+            <Route path="/admin-top-employee" element={<TopEmployee />} />
           </Route>
         </Routes>
       </div>

@@ -18,8 +18,26 @@ const AdminEmployeeSuggestion = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state for API requests
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const rowsPerPage = 8;
   const navigate = useNavigate();
+
+  // Add this helper object to map category values to labels
+  const categoryLabels = {
+    'work-tools': 'Work Tools & Equipment',
+    'training-development': 'Training & Development',
+    'communication': 'Communication Improvement',
+    'workplace-comfort': 'Workplace Comfort & Safety',
+    'employee-activities': 'Employee Activities & Events',
+    'team-building': 'Team Building Ideas',
+    'work-efficiency': 'Work Efficiency Ideas',
+    'other': 'Other Suggestions'
+  };
+
+  // Add this helper function
+  const getCategoryLabel = (categoryValue) => {
+    return categoryLabels[categoryValue] || categoryValue;
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -47,14 +65,70 @@ const AdminEmployeeSuggestion = () => {
     navigate('/');
   };
 
+  const handleStatusUpdate = async (id, action) => {
+    try {
+      setLoading(true);
+  
+      if (action === "DECLINED") {
+        const response = await axios.delete(`${ADMINSUGGESTION}/${id}`);
+        
+        if (response.status === 200) {
+          setSuggestions(prevSuggestions => 
+            prevSuggestions.filter(suggestion => suggestion._id !== id)
+          );
+          alert("Suggestion declined successfully");
+        } else {
+          alert("Failed to decline suggestion. Please try again.");
+        }
+      } else {
+        const response = await axios.put(
+          `${ADMINSUGGESTION}/${id}`,
+          {
+            status: "APPROVED",
+            approvedDate: new Date().toISOString(),
+            isApproved: true
+          }
+        );
+  
+        if (response.status === 200) {
+          setSuggestions(prevSuggestions =>
+            prevSuggestions.map(suggestion =>
+              suggestion._id === id
+                ? {
+                    ...suggestion,
+                    status: "APPROVED",
+                    approvedDate: new Date().toISOString(),
+                    isApproved: true
+                  }
+                : suggestion
+            )
+          );
+          alert("Suggestion approved successfully");
+        } else {
+          alert("Failed to approve suggestion. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Error updating suggestion:", error);
+      alert(`Failed to ${action === "DECLINED" ? "decline" : "approve"} suggestion. Please try again later.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const themeClasses = darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900";
   const sidebarClasses = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900";
   const buttonHoverClasses = darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100";
 
   const filteredSuggestions = suggestions.filter(
-    (suggestion) =>
-      suggestion.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      suggestion.suggestion.toLowerCase().includes(searchTerm.toLowerCase())
+    (suggestion) => {
+      const suggestionDate = new Date(suggestion.dateSubmitted).toISOString().split('T')[0];
+      const matchesSearch = suggestion.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          suggestion.suggestion.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDate = suggestionDate === selectedDate;
+      
+      return matchesSearch && matchesDate;
+    }
   );
 
   const indexOfLastSuggestion = currentPage * rowsPerPage;
@@ -65,6 +139,11 @@ const AdminEmployeeSuggestion = () => {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleDateChange = (event) => {
+    setSelectedDate(event.target.value);
+    setCurrentPage(1); // Reset to first page when date changes
   };
 
   return (
@@ -132,7 +211,18 @@ const AdminEmployeeSuggestion = () => {
 
         {/* Search Input */}
         {activeContent === "Employee Suggestions" && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center space-x-4">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                className="p-3 border border-gray-300 rounded-md"
+              />
+              <span className="text-sm">
+                Showing suggestions for: {new Date(selectedDate).toLocaleDateString()}
+              </span>
+            </div>
             <input
               type="text"
               placeholder="Search Suggestions..."
@@ -155,8 +245,11 @@ const AdminEmployeeSuggestion = () => {
                     <tr>
                       <th className="border border-gray-300 px-4 py-2">ID</th>
                       <th className="border border-gray-300 px-4 py-2">Employee Name</th>
+                      <th className="border border-gray-300 px-4 py-2">Category</th>
                       <th className="border border-gray-300 px-4 py-2">Suggestion</th>
                       <th className="border border-gray-300 px-4 py-2">Date Submitted</th>
+                      <th className="border border-gray-300 px-4 py-2">Status</th>
+                      <th className="border border-gray-300 px-4 py-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -165,13 +258,45 @@ const AdminEmployeeSuggestion = () => {
                         <tr key={index} className="text-center">
                           <td className="border border-gray-300 px-4 py-2">{suggestion._id}</td>
                           <td className="border border-gray-300 px-4 py-2">{suggestion.fullName}</td>
+                          <td className="border border-gray-300 px-4 py-2">{getCategoryLabel(suggestion.category)}</td>
                           <td className="border border-gray-300 px-4 py-2">{suggestion.suggestion}</td>
-                          <td className="border border-gray-300 px-4 py-2">{new Date(suggestion.dateSubmitted).toLocaleDateString()}</td>
+                          <td className="border border-gray-300 px-4 py-2">
+                            {new Date(suggestion.dateSubmitted).toLocaleDateString()}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2">
+                            <span className={`px-2 py-1 rounded ${
+                              suggestion.status === 'APPROVED' 
+                                ? 'bg-green-100 text-green-800' 
+                                : suggestion.status === 'DECLINED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {suggestion.status || 'Pending'}
+                            </span>
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2">
+                            <div className="flex justify-center space-x-2">
+                              <button 
+                                onClick={() => handleStatusUpdate(suggestion._id, 'APPROVED')}
+                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                disabled={loading}
+                              >
+                                ✓
+                              </button>
+                              <button 
+                                onClick={() => handleStatusUpdate(suggestion._id, 'DECLINED')}
+                                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                disabled={loading}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="border border-gray-300 px-4 py-2 text-center text-gray-500">No suggestions available</td>
+                        <td colSpan="7" className="border border-gray-300 px-4 py-2 text-center text-gray-500">No suggestions available</td>
                       </tr>
                     )}
                   </tbody>

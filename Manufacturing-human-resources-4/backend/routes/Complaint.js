@@ -1,14 +1,26 @@
 import express from 'express'; 
-import { submitComplaint } from '../controllers/complaintController.js'; // Import the submitComplaint function from the controller
-import verifyToken from '../middleware/messageMiddleware.js'; 
+import { submitComplaint } from '../controllers/complaintController.js';
+import verifyToken from '../middleware/messageMiddleware.js';
+import multer from "multer";
 
 const router = express.Router();
 
-// POST: Create a new complaint using the controller
-router.post('/api/EmComplaint', verifyToken, submitComplaint); // Use the controller function
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/') // Make sure this directory exists
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname)
+    }
+  })
+});
+
+// POST: Create a new complaint
+router.post('/api/EmComplaint', upload.single('File'), verifyToken, submitComplaint);
 
 // GET: Get all complaints
-router.get('/EmComplaint', verifyToken, async (req, res) => {
+router.get('/EmComplaint', upload.single('File'), verifyToken, async (req, res) => {
   try {
     const complaints = await ComplaintUser.find();
     res.json(complaints);
@@ -17,5 +29,4 @@ router.get('/EmComplaint', verifyToken, async (req, res) => {
   }
 });
 
-// Export the router for use in other files
 export default router;

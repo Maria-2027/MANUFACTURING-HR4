@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon, FaBullhorn, FaBookmark, FaEye, FaThumbsUp, FaComment } from "react-icons/fa";
+import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaSun, FaMoon, FaBullhorn, FaBookmark, FaEye, FaThumbsUp, FaComment, FaRegClipboard } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -49,6 +49,27 @@ const timeAgo = (timestamp) => {
   return "Just now";
 };
 
+// Add this loading skeleton component at the top, after imports
+const LoadingSkeleton = () => (
+  <div className="space-y-6">
+    {[1, 2, 3].map((n) => (
+      <div key={n} className="bg-white rounded-lg p-5 animate-pulse">
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="w-10 h-10 bg-gray-200 rounded-lg"/>
+          <div className="flex-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"/>
+            <div className="h-3 bg-gray-200 rounded w-1/2"/>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="h-3 bg-gray-200 rounded"/>
+          <div className="h-3 bg-gray-200 rounded w-5/6"/>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const AdminCommunication = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
@@ -61,6 +82,28 @@ const AdminCommunication = () => {
   const [showCommentInput, setShowCommentInput] = useState({});
   const [userLikes, setUserLikes] = useState({}); // Add this state
   const [currentUser, setCurrentUser] = useState(null);
+  const [shouldPoll, setShouldPoll] = useState(true);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [newComment, setNewComment] = useState('');
+
+  // Add these new state declarations
+  const modalRef = React.useRef(null);
+  const [modalScrollPosition, setModalScrollPosition] = useState(0);
+
+  // Add this function to preserve scroll position
+  const preserveModalScroll = () => {
+    if (modalRef.current) {
+      setModalScrollPosition(modalRef.current.scrollTop);
+    }
+  };
+
+  // Add effect to restore scroll position
+  useEffect(() => {
+    if (modalRef.current && modalScrollPosition > 0) {
+      modalRef.current.scrollTop = modalScrollPosition;
+    }
+  }, [modalScrollPosition, selectedAnnouncement?.comments]);
 
   const handleLogout = () => {
 
@@ -69,62 +112,82 @@ const AdminCommunication = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    let pollingInterval;
+
     const fetchAnnouncements = async () => {
       try {
         const response = await axios.get(ANNOUNCEMENT);
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          setAnnouncements(response.data);
-          
-          // Update likes and comments from the response
-          const newLikes = {};
-          const newComments = {};
-          const newUserLikes = {};
-          
-          response.data.forEach(announcement => {
-            newLikes[announcement._id] = announcement.likes || 0;
-            newComments[announcement._id] = announcement.comments || [];
-            newUserLikes[announcement._id] = announcement.likedBy || [];
-          });
-          
-          setLikes(newLikes);
-          setComments(newComments);
-          setUserLikes(newUserLikes);
-        }
+        
+        if (!isMounted) return;
+
+        setAnnouncements(response.data);
+        
+        // Initialize states from fetched announcements
+        const initialLikes = {};
+        const initialLikedBy = {};
+        response.data.forEach(announcement => {
+          initialLikes[announcement._id] = announcement.likes || 0;
+          initialLikedBy[announcement._id] = announcement.likedBy || [];
+        });
+        setLikes(initialLikes);
+        setUserLikes(initialLikedBy);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching announcements:', error);
-      } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    // Initial fetch
     fetchAnnouncements();
-
-    // Poll every 30 seconds instead of 5 seconds
     const interval = setInterval(fetchAnnouncements, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
-    return () => clearInterval(interval);
-  }, []); // Remove dependencies array
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setShouldPoll(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     const checkAuth = () => {
-      const isAuthenticated = localStorage.getItem('isAuthenticated');
-      const userRole = localStorage.getItem('userRole');
-      
-      if (isAuthenticated === 'true' && userRole === 'Admin') {
-        setCurrentUser({
-          id: 'admin-user',
-          name: 'Admin User',
-          username: 'admin',
-          isAdmin: true
-        });
+      const user = getUser();
+      if (user) {
+        setCurrentUser(user);
       }
     };
 
     checkAuth();
   }, []);
 
-  const getUser = () => currentUser;
+  const getUser = () => {
+    try {
+      const userString = localStorage.getItem('userData') || localStorage.getItem('user');
+      if (!userString) return null;
+      
+      const user = JSON.parse(userString);
+      return {
+        id: user._id || user.id, // Handle both _id and id cases
+        name: user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}`
+          : user.name || 'Admin User',
+        username: user.email || user.username,
+        isAdmin: user.userRole === 'Admin' || user.userRole === 'Superadmin'
+      };
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
+  };
 
   const handleLike = async (announcementId, event) => {
     event.stopPropagation();
@@ -199,6 +262,65 @@ const AdminCommunication = () => {
     }
   };
 
+  const handleReplySubmit = (e, announcementId, commentId) => {
+    e.preventDefault();
+    if (replyText.trim()) {
+      handleComment(announcementId, replyText, commentId);
+    }
+  };
+
+  const handleComment = async (announcementId, commentText, parentCommentId = null) => {
+    if (!currentUser) {
+      alert('Please login as admin to comment');
+      return;
+    }
+
+    if (!commentText.trim()) return;
+
+    try {
+      const announcement = announcements.find(a => a._id === announcementId);
+      if (!announcement) return;
+
+      // Preserve scroll position before update
+      if (modalRef.current) {
+        setModalScrollPosition(modalRef.current.scrollTop);
+      }
+
+      const response = await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
+        action: 'comment',
+        userId: currentUser.id,
+        userName: currentUser.name,
+        comment: {
+          text: commentText,
+          timestamp: new Date().toISOString(),
+          parentId: parentCommentId,
+        },
+        title: announcement.title,
+        content: announcement.content,
+        date: announcement.date
+      });
+
+      if (response.data) {
+        setAnnouncements(prev => 
+          prev.map(ann => 
+            ann._id === announcementId ? response.data : ann
+          )
+        );
+
+        if (selectedAnnouncement?._id === announcementId) {
+          setSelectedAnnouncement(response.data);
+        }
+
+        // Reset global states
+        setNewComment('');
+        setReplyingTo(null);
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      alert('Failed to post comment. Please try again.');
+    }
+  };
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -215,46 +337,230 @@ const AdminCommunication = () => {
     setSelectedAnnouncement(null);
   };
 
-  const handleComment = async (announcementId, comment) => {
-    if (!comment.trim()) return;
-    
-    try {
-      const newComment = {
-        text: comment,
-        timestamp: new Date().toISOString()
-      };
-
-      // Update locally first
-      const updatedComments = [
-        ...(comments[announcementId] || []),
-        newComment
-      ];
-
-      setComments(prev => ({
-        ...prev,
-        [announcementId]: updatedComments
-      }));
-
-      // Update in backend
-      await axios.patch(`${ANNOUNCEMENT}/${announcementId}`, {
-        comments: updatedComments
-      });
-
-      setShowCommentInput(prev => ({
-        ...prev,
-        [announcementId]: false
-      }));
-    } catch (error) {
-      console.error('Error posting comment:', error);
-    }
+  const getCommentCount = (announcement) => {
+    return announcement.comments?.reduce((total, comment) => 
+      total + (comment.parentId ? 0 : 1) + 
+      announcement.comments.filter(reply => reply.parentId === comment._id).length
+    , 0) || 0;
   };
+
+  const MemoizedAnnouncement = React.memo(({ announcement }) => (
+    <div className="bg-white rounded-lg border border-gray-200 hover:border-blue-200 transition-all duration-200">
+      {/* Header */}
+      <div className="p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+              <FaBullhorn className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900">{announcement.title}</h3>
+              <div className="text-sm text-gray-500">
+                Posted {timeAgo(announcement.date)}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button className="p-2 hover:bg-gray-50 rounded-full" title="Save">
+              <FaBookmark className="text-gray-400 hover:text-blue-500" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5" onClick={() => handleAnnouncementClick(announcement)}>
+        <p className="text-gray-600 leading-relaxed">
+          {announcement.content.length > 200 
+            ? `${announcement.content.substring(0, 200)}...` 
+            : announcement.content}
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLike(announcement._id, e);
+              }}
+              className={`flex items-center space-x-2 transition-colors ${
+                announcement.likedBy?.includes(currentUser?.id)
+                  ? 'text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full'
+                  : 'text-gray-600 hover:text-blue-600'
+              }`}
+            >
+              <FaThumbsUp className={
+                announcement.likedBy?.includes(currentUser?.id)
+                  ? 'transform scale-110'
+                  : ''
+              } />
+              <span>
+                {announcement.likes || 0}
+                {announcement.likedBy?.includes(currentUser?.id) 
+                  ? ' Liked'
+                  : announcement.likes > 0 
+                    ? ' Likes'
+                    : ' Like'
+                }
+              </span>
+              {announcement.likes > 0 && (
+                <span className="text-xs text-gray-500">
+                  {announcement.likedBy?.includes(currentUser?.id)
+                    ? announcement.likes > 1
+                      ? ` (You and ${announcement.likes - 1} other${announcement.likes > 2 ? 's' : ''})`
+                      : ' (You liked this)'
+                    : ` (${announcement.likes} like${announcement.likes > 1 ? 's' : ''})`
+                  }
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => setShowCommentInput(prev => ({
+                ...prev,
+                [announcement._id]: !prev[announcement._id]
+              }))}
+              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <FaComment />
+              <span>{getCommentCount(announcement)} Comments</span>
+            </button>
+          </div>
+          <button 
+            onClick={() => handleAnnouncementClick(announcement)}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            Read More
+          </button>
+        </div>
+
+        {/* Comment Section */}
+        {showCommentInput[announcement._id] && (
+          <div className="mt-3 space-y-3">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleComment(announcement._id, e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+              />
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                onClick={(e) => {
+                  const input = e.target.previousSibling;
+                  handleComment(announcement._id, input.value);
+                  input.value = '';
+                }}
+              >
+                Comment
+              </button>
+            </div>
+            {announcement.comments
+              ?.filter(c => !c.parentId)
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+              .map((comment, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-700">{comment.userName}</p>
+                    <p className="text-gray-600">{comment.text}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-500">{timeAgo(comment.timestamp)}</p>
+                      <button
+                        onClick={() => setReplyingTo(comment._id)}
+                        className="text-sm text-blue-500 hover:text-blue-600"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Show Replies */}
+                  {announcement.comments
+                    .filter(reply => reply.parentId === comment._id)
+                    .map((reply, j) => (
+                      <div key={j} className="ml-8 bg-gray-50 p-3 rounded-lg border-l-2 border-blue-200">
+                        <p className="text-sm font-semibold text-gray-700">{reply.userName}</p>
+                        <p className="text-xs text-gray-500 mb-1">Replied to {comment.userName}</p>
+                        <p className="text-gray-600">{reply.text}</p>
+                        <p className="text-xs text-gray-500 mt-2">{timeAgo(reply.timestamp)}</p>
+                      </div>
+                    ))}
+
+                  {/* Reply Input */}
+                  {replyingTo === comment._id && (
+                    <ReplyInput comment={comment} announcement={announcement} />
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    </div>
+  ));
+
+  const ReplyInput = React.memo(({ comment, announcement }) => {
+    const [localReplyText, setLocalReplyText] = useState('');
+    
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (localReplyText.trim()) {
+        handleComment(announcement._id, localReplyText, comment._id);
+        setLocalReplyText('');
+      }
+    };
+
+    return (
+      <div className="ml-8">
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
+          <p className="text-sm text-gray-500">Replying to {comment.userName}</p>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={localReplyText}
+              onChange={(e) => setLocalReplyText(e.target.value)}
+              placeholder="Write a reply..."
+              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Reply
+            </button>
+            <button
+              type="button"
+              className="px-3 py-2 text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setReplyingTo(null);
+                setLocalReplyText('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  });
 
   return (
     <div className={`flex h-screen ${themeClasses}`}>
       {/* Sidebar */}
                  <aside className={`w-72 shadow-lg p-6 flex flex-col relative h-screen overflow-y-auto ${sidebarClasses}`}>
                    <div className="flex justify-center mb-6">
-                     <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full" />
+                     <img 
+                       src={layout} 
+                       alt="JJM Logo" 
+                       className="w-32 h-32 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
+                       onClick={() => navigate('/admin-dashboard')}
+                     />
                    </div>
                    <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
            
@@ -263,7 +569,8 @@ const AdminCommunication = () => {
                        {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
                          { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
                          { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
-                         { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" }]
+                         { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" },
+                         { title: "Audit Logs", icon: <FaRegClipboard className="text-lg" />, link: "/admin-audit-logs" }]
                          .map((item, index) => (
                            <li key={index} className={`p-3 rounded-md transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}>
                              <Link to={item.link} className="flex items-center space-x-3" onClick={() => setActiveTab(item.title)}>
@@ -297,140 +604,14 @@ const AdminCommunication = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin border-t-4 border-blue-600 rounded-full w-12 h-12"></div>
-            </div>
+            <LoadingSkeleton />
           ) : announcements.length > 0 ? (
             <div className="space-y-6">
               {announcements.map((announcement, index) => (
-                <div key={index} 
-                     className="bg-white rounded-lg border border-gray-200 hover:border-blue-200 transition-all duration-200">
-                  {/* Header */}
-                  <div className="p-5 border-b border-gray-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                          <FaBullhorn className="text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-900">{announcement.title}</h3>
-                          <div className="text-sm text-gray-500">
-                            Posted {timeAgo(announcement.date)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button className="p-2 hover:bg-gray-50 rounded-full" title="Save">
-                          <FaBookmark className="text-gray-400 hover:text-blue-500" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-5" onClick={() => handleAnnouncementClick(announcement)}>
-                    <p className="text-gray-600 leading-relaxed">
-                      {announcement.content.length > 200 
-                        ? `${announcement.content.substring(0, 200)}...` 
-                        : announcement.content}
-                    </p>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="px-5 py-3 border-t border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-4">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLike(announcement._id, e);
-                          }}
-                          className={`flex items-center space-x-2 transition-colors ${
-                            announcement.likedBy?.includes(currentUser?.id)
-                              ? 'text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full'
-                              : 'text-gray-600 hover:text-blue-600'
-                          }`}
-                        >
-                          <FaThumbsUp className={
-                            announcement.likedBy?.includes(currentUser?.id)
-                              ? 'transform scale-110'
-                              : ''
-                          } />
-                          <span>
-                            {announcement.likes || 0}
-                            {announcement.likedBy?.includes(currentUser?.id) 
-                              ? ' Liked'
-                              : announcement.likes > 0 
-                                ? ' Likes'
-                                : ' Like'
-                            }
-                          </span>
-                          {announcement.likes > 0 && (
-                            <span className="text-xs text-gray-500">
-                              {announcement.likedBy?.includes(currentUser?.id)
-                                ? announcement.likes > 1
-                                  ? ` (You and ${announcement.likes - 1} other${announcement.likes > 2 ? 's' : ''})`
-                                  : ' (You liked this)'
-                                : ` (${announcement.likes} like${announcement.likes > 1 ? 's' : ''})`
-                              }
-                            </span>
-                          )}
-                        </button>
-                        <button 
-                          onClick={() => setShowCommentInput(prev => ({
-                            ...prev,
-                            [announcement._id]: !prev[announcement._id]
-                          }))}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-                        >
-                          <FaComment />
-                          <span>{(comments[announcement._id] || []).length} Comments</span>
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => handleAnnouncementClick(announcement)}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                      >
-                        Read More
-                      </button>
-                    </div>
-
-                    {/* Comment Section */}
-                    {showCommentInput[announcement._id] && (
-                      <div className="mt-3 space-y-3">
-                        <div className="flex space-x-2">
-                          <input
-                            type="text"
-                            placeholder="Add a comment..."
-                            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleComment(announcement._id, e.target.value);
-                                e.target.value = '';
-                              }
-                            }}
-                          />
-                          <button
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                            onClick={(e) => {
-                              const input = e.target.previousSibling;
-                              handleComment(announcement._id, input.value);
-                              input.value = '';
-                            }}
-                          >
-                            Comment
-                          </button>
-                        </div>
-                        {/* Display Comments */}
-                        {(comments[announcement._id] || []).map((comment, i) => (
-                          <div key={i} className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-gray-600">{comment}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <MemoizedAnnouncement 
+                  key={announcement._id || index} 
+                  announcement={announcement}
+                />
               ))}
             </div>
           ) : (
@@ -446,8 +627,12 @@ const AdminCommunication = () => {
       {selectedAnnouncement && (
         <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex justify-center items-center z-50" 
              onClick={handleCloseModal}>
-          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl" 
-               onClick={e => e.stopPropagation()}>
+          <div 
+            ref={modalRef}
+            className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl" 
+            onClick={e => e.stopPropagation()}
+            onScroll={preserveModalScroll}
+          >
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -466,9 +651,89 @@ const AdminCommunication = () => {
               </div>
             </div>
             <div className="p-6">
-              <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">
+              <p className="text-gray-600 whitespace-pre-wrap leading-relaxed mb-6">
                 {selectedAnnouncement.content}
               </p>
+
+              {/* Comments Section */}
+              <div className="border-t pt-4">
+                <h4 className="text-lg font-semibold mb-4">Comments</h4>
+                
+                {/* New Comment Input */}
+                <div className="mb-4">
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newComment.trim()) {
+                          handleComment(selectedAnnouncement._id, newComment);
+                        }
+                      }}
+                    />
+                    <button
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      onClick={() => {
+                        if (newComment.trim()) {
+                          handleComment(selectedAnnouncement._id, newComment);
+                        }
+                      }}
+                    >
+                      Comment
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="space-y-4">
+                  {selectedAnnouncement.comments
+                    ?.filter(c => !c.parentId)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .map((comment, i) => (
+                      <div key={i} className="space-y-3">
+                        {/* Main Comment */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-sm font-semibold text-gray-700">{comment.userName}</p>
+                          <p className="text-gray-600">{comment.text}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-gray-500">{timeAgo(comment.timestamp)}</p>
+                            <button
+                              onClick={() => setReplyingTo(comment._id)}
+                              className="text-sm text-blue-500 hover:text-blue-600"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Replies */}
+                        <div className="ml-8 space-y-3">
+                          {selectedAnnouncement.comments
+                            .filter(reply => reply.parentId === comment._id)
+                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                            .map((reply, j) => (
+                              <div key={j} className="bg-gray-50 p-3 rounded-lg border-l-2 border-blue-200">
+                                <div className="flex flex-col">
+                                  <p className="text-sm font-semibold text-gray-700">{reply.userName}</p>
+                                  <p className="text-xs text-gray-500 mb-1">Replied to {comment.userName}</p>
+                                  <p className="text-gray-600">{reply.text}</p>
+                                  <p className="text-xs text-gray-500 mt-2">{timeAgo(reply.timestamp)}</p>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Reply Input */}
+                        {replyingTo === comment._id && (
+                          <ReplyInput comment={comment} announcement={selectedAnnouncement} />
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -487,4 +752,4 @@ const AdminCommunication = () => {
   );
 };
 
-export default AdminCommunication;
+export default React.memo(AdminCommunication);

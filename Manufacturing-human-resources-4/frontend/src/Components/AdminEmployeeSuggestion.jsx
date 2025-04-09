@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt } from "react-icons/fa";
+import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaRegClipboard } from "react-icons/fa";
 import layout from "./Assets/layout.jpg";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,6 +19,9 @@ const AdminEmployeeSuggestion = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false); // Loading state for API requests
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [feedback, setFeedback] = useState("");
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const rowsPerPage = 8;
   const navigate = useNavigate();
 
@@ -65,52 +68,63 @@ const AdminEmployeeSuggestion = () => {
     navigate('/');
   };
 
-  const handleStatusUpdate = async (id, action) => {
+  const handleStatusUpdate = async (id, action, employeeId) => {
+    const currentSuggestion = suggestions.find(s => s._id === id);
+    setSelectedSuggestion({
+      _id: id,
+      status: action,
+      employeeId: employeeId,
+      suggestion: currentSuggestion.suggestion, // Add the suggestion text
+      dateSubmitted: currentSuggestion.dateSubmitted,
+      fullName: currentSuggestion.fullName  // Add this line
+    });
+    setShowFeedbackModal(true);
+  };
+
+  const handleSubmitFeedback = async () => {
     try {
       setLoading(true);
-  
-      if (action === "DECLINED") {
-        const response = await axios.delete(`${ADMINSUGGESTION}/${id}`);
-        
-        if (response.status === 200) {
-          setSuggestions(prevSuggestions => 
-            prevSuggestions.filter(suggestion => suggestion._id !== id)
-          );
-          alert("Suggestion declined successfully");
-        } else {
-          alert("Failed to decline suggestion. Please try again.");
-        }
-      } else {
-        const response = await axios.put(
-          `${ADMINSUGGESTION}/${id}`,
-          {
-            status: "APPROVED",
-            approvedDate: new Date().toISOString(),
-            isApproved: true
-          }
+      const action = selectedSuggestion.status;
+      
+      const updateData = {
+        status: action,
+        feedback: feedback,
+        employeeId: selectedSuggestion.employeeId,
+        updatedAt: new Date().toISOString(),
+        suggestion: selectedSuggestion.suggestion,
+        dateSubmitted: selectedSuggestion.dateSubmitted,
+        fullName: selectedSuggestion.fullName  // Add this line
+      };
+
+      console.log("Updating suggestion:", {
+        id: selectedSuggestion._id,
+        updateData
+      });
+
+      const response = await axios.put(
+        `${ADMINSUGGESTION}/${selectedSuggestion._id}`,
+        updateData
+      );
+
+      console.log("Update response:", response.data);
+
+      if (response.status === 200) {
+        setSuggestions(prevSuggestions =>
+          prevSuggestions.map(suggestion =>
+            suggestion._id === selectedSuggestion._id
+              ? { ...suggestion, ...updateData }
+              : suggestion
+          )
         );
-  
-        if (response.status === 200) {
-          setSuggestions(prevSuggestions =>
-            prevSuggestions.map(suggestion =>
-              suggestion._id === id
-                ? {
-                    ...suggestion,
-                    status: "APPROVED",
-                    approvedDate: new Date().toISOString(),
-                    isApproved: true
-                  }
-                : suggestion
-            )
-          );
-          alert("Suggestion approved successfully");
-        } else {
-          alert("Failed to approve suggestion. Please try again.");
-        }
+        alert(`Suggestion ${action.toLowerCase()} with feedback`);
       }
+      
+      setShowFeedbackModal(false);
+      setFeedback("");
+      setSelectedSuggestion(null);
     } catch (error) {
-      console.error("Error updating suggestion:", error);
-      alert(`Failed to ${action === "DECLINED" ? "decline" : "approve"} suggestion. Please try again later.`);
+      console.error("Error updating suggestion:", error.response?.data || error.message);
+      alert("Failed to process suggestion. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -151,7 +165,12 @@ const AdminEmployeeSuggestion = () => {
       {/* Sidebar */}
       <aside className={`w-72 shadow-lg p-6 flex flex-col relative h-screen overflow-y-auto ${sidebarClasses}`}>
         <div className="flex justify-center mb-6">
-          <img src={layout} alt="JJM Logo" className="w-32 h-32 rounded-full" />
+          <img 
+            src={layout} 
+            alt="JJM Logo" 
+            className="w-32 h-32 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => navigate('/admin-dashboard')}
+          />
         </div>
         <h2 className="text-2xl font-bold text-center mb-8">JJM Admin Portal</h2>
 
@@ -160,7 +179,8 @@ const AdminEmployeeSuggestion = () => {
             {[{ title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
               { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
               { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
-              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" }]
+              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" },
+              { title: "Audit Logs", icon: <FaRegClipboard className="text-lg" />, link: "/admin-audit-logs" }]
               .map((item, index) => (
                 <li key={index} className={`p-3 rounded-md transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}>
                   <Link to={item.link} className="flex items-center space-x-3" onClick={() => setActiveTab(item.title)}>
@@ -277,14 +297,14 @@ const AdminEmployeeSuggestion = () => {
                           <td className="border border-gray-300 px-4 py-2">
                             <div className="flex justify-center space-x-2">
                               <button 
-                                onClick={() => handleStatusUpdate(suggestion._id, 'APPROVED')}
+                                onClick={() => handleStatusUpdate(suggestion._id, 'APPROVED', suggestion.employeeId)}
                                 className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                                 disabled={loading}
                               >
                                 ✓
                               </button>
                               <button 
-                                onClick={() => handleStatusUpdate(suggestion._id, 'DECLINED')}
+                                onClick={() => handleStatusUpdate(suggestion._id, 'DECLINED', suggestion.employeeId)}
                                 className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                 disabled={loading}
                               >
@@ -328,6 +348,40 @@ const AdminEmployeeSuggestion = () => {
         {activeContent === "Budget Requests" && <AdminBudgetRequest />}
         {activeContent === "Budget Status" && <AdminBudgetStatus />}
       </main>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="text-xl font-bold mb-4">Provide Feedback</h3>
+            <textarea
+              className="w-full h-32 p-2 border border-gray-300 rounded-md mb-4"
+              placeholder="Enter your feedback here..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setShowFeedbackModal(false);
+                  setFeedback("");
+                  setSelectedSuggestion(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitFeedback}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                disabled={!feedback.trim()}
+              >
+                Submit Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,6 +15,11 @@ import messageRoutes from './routes/messageRoutes.js';  // Fixed path
 import cloudinary from "cloudinary";
 import budgetRequestRoute from "./routes/budgetRequests.js"; // Fixed path
 import integrationRoutes from "./routes/integrationRoutes.js"; // Fixed path
+import notificationRoutes from './routes/notificationRoutes.js'; // Fixed path
+import auditRoutes from './routes/auditRoutes.js';  // Add this import
+import authenticatorRoutes from "./routes/authenticatorRoutes.js";
+import takeAction from "./routes/takeAction.js";
+import fileServe from './middleware/fileServe.js';
 
 dotenv.config();
 const app = express();
@@ -29,10 +34,18 @@ cloudinary.config({
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-  origin: ["http://localhost:5173", "https://hr4.jjm-manufacturing.com"],
+  origin: "*",
   credentials: true,
-  methods: ["GET", "POST","PATCH", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "authorization"
+  ],
+  exposedHeaders: ["Authorization"]
 }));
 app.use(express.urlencoded({ extended: true })); // Ensure JSON parsing
 
@@ -61,6 +74,8 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.use('/uploads', fileServe);
+
 app.options("*", cors());
 
 
@@ -70,6 +85,8 @@ app.use("/api/auth", suggestionRoute);
 app.use("/api", Complaint);
 app.use('/api/budget-requests', budgetRequestRoute);
 app.use(messageRoutes);
+app.use('/api/notifications', notificationRoutes);  // Add this line back
+app.use("/api", auditRoutes);  // This will prefix all audit routes with /api
 
 app.get("/api/auth",  (req, res) => {
   Suggestion.find()
@@ -85,6 +102,9 @@ app.get("/EmComplaint", async (req, res) => {
 
 
 app.use("/api/integration", integrationRoutes);
+// Register the 2FA routes
+app.use("/api/authenticator", authenticatorRoutes);
+app.use("/api/grievance", takeAction);
 
 
 // Start server

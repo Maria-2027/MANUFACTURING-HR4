@@ -1,39 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaLock } from "react-icons/fa";
+import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { SyncLoader } from "react-spinners";
-import layoutImage from "../Components/Assets/layout.jpg"; // Company Branding Image
-import axios from 'axios'; // Import axios
+import layoutImage from "../Components/Assets/layout.jpg";
+import axios from 'axios';
 import { MetroSpinner } from 'react-spinners-kit';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ADMINLOGIN = process.env.NODE_ENV === "development"
   ? "http://localhost:7688/api/auth/testLog"
   : "https://backend-hr4.jjm-manufacturing.com/api/auth/testLog";
 
+const TWO_FA_BASE_URL = process.env.NODE_ENV === "development"
+  ? "http://localhost:7688/api/authenticator"
+  : "https://backend-hr4.jjm-manufacturing.com/api/authenticator";
+
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
-    email: "", // Changed from username to email
+    email: "",
     password: "",
+    rememberMe: false,
   });
+  const [show2FA, setShow2FA] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [fadeInForm, setFadeInForm] = useState(false);
-  const [fadeInText, setFadeInText] = useState(false);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(false);
-      setFadeInForm(true);
     }, 1000);
-
-    setTimeout(() => {
-      setFadeInText(true);
-    }, 1500);
   }, []);
 
   const handleChange = (e) => {
@@ -43,137 +47,388 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
     
-    console.log('Attempting login with:', { email: formData.email });
-  
     try {
-      console.log('Making API request to:', ADMINLOGIN);
-      const response = await axios.post(ADMINLOGIN, formData);
-      console.log('Server response:', response.data);
+      const requestData = {
+        email: formData.email,
+        password: formData.password
+      };
+
+      console.log('Sending login request:', requestData); // Debug log
+
+      const response = await axios.post(ADMINLOGIN, requestData);
+      
+      console.log('Login response:', response.data); // Debug log
 
       if (response.data && response.data.token) {
-        // Check if user has Admin role
-        if (response.data.user.role !== "Admin") {
-          throw new Error("Access denied. Only HR Administrators can login here.");
+        const userRole = response.data.user?.role?.toLowerCase();
+        if (!["admin", "superadmin"].includes(userRole)) {
+          toast.error("Access denied. Only Administrators can login here.");
+          throw new Error("Access denied. Only Administrators can login here.");
         }
-        
-        // Store the token and user data
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userRole", response.data.user?.role || "admin");
-        sessionStorage.setItem("accessToken", response.data.token);
-  
-        setSuccess("Login successful! Redirecting...");
-  
-        setTimeout(() => {
-          navigate("/admin-dashboard");
-        }, 2000);
+
+        // Show success message first
+        toast.success("Login successful! Preparing 2FA verification...");
+
+        // Store credentials temporarily
+        sessionStorage.setItem("tempAuthData", JSON.stringify({
+          token: response.data.token,
+          user: response.data.user
+        }));
+
+        // Add a delay before showing 2FA
+        setTimeout(async () => {
+          try {
+            await axios.post(`${TWO_FA_BASE_URL}/send-2fa-code`, {
+              email: formData.email
+            });
+            setShow2FA(true);
+            setIsCodeSent(true);
+            toast.info("A verification code has been sent to your email.", {
+              position: "top-center",
+              autoClose: 5000,
+              theme: "colored",
+            });
+          } catch (error) {
+            toast.error("Failed to send verification code. Please try again.");
+            sessionStorage.removeItem("tempAuthData");
+          }
+          setLoading(false);
+        }, 1500); // 1.5 second delay
+        return; // Exit early to prevent setLoading(false) in finally block
       } else {
-        throw new Error("Login failed - No token received");
+        throw new Error('No token received from server');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       
-      if (error.response) {
-        setError(`Login failed: ${error.response.data.message || error.response.statusText}`);
-      } else if (error.request) {
-        setError("Network error - Could not connect to the server. Please check your internet connection.");
-      } else {
-        setError(`Login error: ${error.message}`);
-      }
+      const errorMessage = error.response?.data?.error || 
+                          error.message === "Access denied. Only Administrators can login here."
+                            ? error.message 
+                            : "Invalid email or password";
       
-      setTimeout(() => setError(null), 5000);
+      toast.error(errorMessage);
+      // Clear any temporary data if login fails
+      sessionStorage.removeItem("tempAuthData");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${TWO_FA_BASE_URL}/verify-2fa-code`, {
+        email: formData.email,
+        code: verificationCode
+      });
+
+      if (response.status === 200) {
+        const tempAuthData = JSON.parse(sessionStorage.getItem("tempAuthData"));
+        
+        if (!tempAuthData) {
+          throw new Error("Login session expired. Please login again.");
+        }
+
+        // Only now set the actual authentication data after 2FA verification
+        sessionStorage.setItem("accessToken", tempAuthData.token);
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("userData", JSON.stringify(tempAuthData.user));
+        
+        // Clean up temporary data
+        sessionStorage.removeItem("tempAuthData");
+
+        toast.success("Login successful! Please wait...");
+        setTimeout(() => navigate("/admin-dashboard"), 2000);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Invalid verification code");
+      if (error.message === "Login session expired. Please login again.") {
+        setShow2FA(false); // Return to login form
+        setFormData({ email: "", password: "", rememberMe: false });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseModal = (setter) => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setter(false);
+      setIsClosing(false);
+    }, 200);
+  };
+
+  const ModalWrapper = ({ isOpen, children }) => (
+    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex justify-center items-center z-50">
+      <div className="bg-white rounded-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
+        {children}
+      </div>
+    </div>
+  );
+
+  const TermsModal = () => (
+    <ModalWrapper isOpen={showTerms}>
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
+        <div className="p-4 border-b border-gray-200 flex justify-between sticky top-0 bg-white">
+          <h2 className="text-2xl font-bold">Terms of Service</h2>
+          <button 
+            onClick={() => handleCloseModal(setShowTerms)} 
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-6 prose max-w-none">
+          <p className="text-sm text-gray-600 mb-4">Last Updated: November 20, 2024</p>
+          
+          <p className="mb-4">Welcome to Human Resources 4, a Manufacturing Management System designed to facilitate Employee Grievances, Employee Suggestions, Communication Hub, and Workforce Analytics. By accessing and using this system, you agree to the following terms and conditions.</p>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">1. Acceptance of Terms</h3>
+          <p className="mb-4">By using Human Resources 4, you acknowledge that you have read, understood, and agreed to these Terms of Service. If you do not agree, please refrain from using the system.</p>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">2. User Responsibilities</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>Users must provide accurate and up-to-date information.</li>
+            <li>Unauthorized access, data tampering, or misuse of system resources is prohibited.</li>
+            <li>Users must comply with company policies and applicable laws when submitting grievances, suggestions, or using the communication hub.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">3. Employee Grievances & Suggestions</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>All grievances and suggestions submitted will be reviewed by authorized personnel.</li>
+            <li>Users must ensure that all submissions are truthful and relevant to workplace concerns.</li>
+            <li>Any false or misleading information may result in disciplinary action.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">4. Communication Hub</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>This platform is intended for professional discussions and official company communication.</li>
+            <li>Users are prohibited from posting offensive, inappropriate, or confidential information.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">5. Workforce Analytics</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>The system collects and processes workforce data to improve organizational efficiency.</li>
+            <li>Users acknowledge that workforce analytics may involve automated processing of data.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">6. Termination</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>Violation of these terms may lead to suspension or permanent restriction from the system.</li>
+          </ul>
+        </div>
+      </div>
+    </ModalWrapper>
+  );
+
+  const PrivacyModal = () => (
+    <ModalWrapper isOpen={showPrivacy}>
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto m-4">
+        <div className="p-4 border-b border-gray-200 flex justify-between sticky top-0 bg-white">
+          <h2 className="text-2xl font-bold">Privacy Policy</h2>
+          <button 
+            onClick={() => handleCloseModal(setShowPrivacy)} 
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            ×
+          </button>
+        </div>
+        <div className="p-6 prose max-w-none">
+          <p className="text-sm text-gray-600 mb-4">Last Updated: November 20, 2024</p>
+          
+          <p className="mb-4">Human Resources 4 values your privacy. This Privacy Policy outlines how we collect, use, and protect your personal data.</p>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">1. Information We Collect</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li><strong>Personal Information:</strong> Name, employee ID, email, and contact details.</li>
+            <li><strong>Grievances & Suggestions Data:</strong> Issues reported and feedback submitted.</li>
+            <li><strong>Communication Data:</strong> Messages and discussions within the communication hub.</li>
+            <li><strong>Workforce Analytics Data:</strong> Employee performance, engagement, and behavioral metrics.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">2. How We Use Your Information</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>To process grievances and suggestions efficiently.</li>
+            <li>To facilitate internal communication and engagement.</li>
+            <li>To analyze workforce trends and improve decision-making.</li>
+            <li>To ensure compliance with company policies and legal regulations.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">3. Data Security</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>We implement security measures to protect user data from unauthorized access.</li>
+            <li>Only authorized personnel can access sensitive data.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">4. Data Retention</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>Employee grievance and communication records are stored securely and retained as per company policy.</li>
+            <li>Workforce analytics data may be anonymized for long-term analysis.</li>
+          </ul>
+          
+          <h3 className="text-xl font-bold mt-6 mb-3">5. Your Rights</h3>
+          <ul className="list-disc pl-5 mb-4">
+            <li>You have the right to access, update, or request deletion of your data (subject to company policies).</li>
+            <li>If you have concerns about data privacy, contact [Support Email].</li>
+          </ul>
+          
+          <p className="mt-6 mb-4">By using Human Resources 4, you consent to this Privacy Policy. We may update this policy, and continued use of the system constitutes acceptance of the changes.</p>
+          
+          <hr className="my-6" />
+          
+          <p className="text-sm text-gray-600">For inquiries, contact our admin and head department.</p>
+        </div>
+      </div>
+    </ModalWrapper>
+  );
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="text-center text-gray-700">
-          <SyncLoader
-            cssOverride={{}}
-            loading
-            color="#000000"
-            margin={12}
-            size={15}
-            speedMultiplier={0.5}
-          />
+          <SyncLoader cssOverride={{}} loading color="#000000" margin={12} size={15} speedMultiplier={0.5} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <div className={`flex justify-center items-center w-full md:w-1/2 p-10 transform transition-opacity duration-1000 ${fadeInForm ? "opacity-100" : "opacity-0"}`}>
-        <form onSubmit={handleSubmit} className="flex flex-col w-full max-w-md p-8 bg-white shadow-2xl rounded-lg border border-gray-200">
-          <h2 className="mb-6 text-4xl font-bold text-center text-gray-800">Hr 4 Login</h2>
-          {error && <p className="bg-red-600 text-white p-2 rounded-md text-center mb-4">{error}</p>}
-          {success && <p className="bg-green-600 text-white p-2 rounded-md text-center mb-4">{success}</p>}
-          <div className="relative mb-6">
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full p-4 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
-              required
-            />
-            <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500 text-xl" />
-          </div>
-          <div className="relative mb-6">
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-4 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-300"
-              required
-            />
-            <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500 text-xl" />
-          </div>
-          {loading ? (
-            <button
-              disabled
-              className="p-4 w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl 
-                shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] transition-all duration-300
-                text-base font-semibold flex items-center justify-center space-x-4"
-            >
-              <MetroSpinner size={20} color="white" loading={true} />
-              <span className="ml-2">Logging in...</span>
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="p-4 w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-xl 
-                shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] transition-all duration-300
-                hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.4)] text-base font-semibold
-                flex items-center justify-center space-x-4 overflow-hidden relative
-                before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent 
-                before:via-white before:to-transparent before:opacity-20 before:hover:translate-x-full
-                before:transition-transform before:duration-700"
-            >
-              Login
-            </button>
-          )}
-          <p className="mt-4 text-center text-gray-600">
-            <a href="/ForgotPassword" className="text-teal-600 font-semibold hover:underline">
-              Forgot Password?
-            </a>
-          </p>
-        </form>
-      </div>
-      <div className={`hidden md:flex items-center justify-center w-1/2 p-10 transition-all duration-1000 ${fadeInText ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"}`}>
-        <div className="text-center p-6 rounded-lg">
-          <img src={layoutImage} alt="JJM Layout" className="w-40 h-40 mx-auto mb-4 rounded-lg shadow-lg" />
-          <h1 className="text-5xl font-extrabold text-gray-900">JJM MANUFACTURING</h1>
-          <p className="mt-4 text-2xl font-semibold text-gray-900">Basta Best Quality, JJM na yan!</p>
-          <p className="mt-2 text-lg text-gray-900">Secure Admin Access to HR4</p>
+    <div className="min-h-screen flex items-center justify-center bg-base-500 bg-green-100 bg-opacity-25">
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        limit={1}
+      />
+      <div className="bg-white rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.25)] p-10 w-full max-w-sm">
+        <div className="flex justify-center gap-x-2 pb-2">
+          <img
+            src={layoutImage}
+            alt="jjm logo"
+            className="w-12 h-12 rounded-full border-2"
+          />
+          <h2 className="text-3xl font-bold text-center text-gray-800 mt-1">
+            ADMIN LOGIN
+          </h2>
         </div>
+
+        {!show2FA ? (
+          <form onSubmit={handleSubmit}>
+            <div className="mb-6">
+              <label className="block text-gray-700 text-sm mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                className="input input-bordered w-full p-3 border border-gray-300 dark:bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                required
+              />
+            </div>
+
+            <div className="mb-6 relative">
+              <label className="block text-gray-700 text-sm mb-2">
+                Password
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-green-500">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input input-bordered w-full p-3 rounded focus:outline-none dark:bg-white"
+                  required
+                />
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-10 h-full"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <FaEyeSlash className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <FaEye className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xs text-gray-600 text-center">
+                By continuing, you agree to our{' '}
+                <button 
+                  type="button"
+                  onClick={() => setShowTerms(true)} 
+                  className="text-green-600 hover:underline focus:outline-none"
+                >
+                  Terms of Service
+                </button>{' '}
+                and{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacy(true)}
+                  className="text-green-600 hover:underline focus:outline-none"
+                >
+                  Privacy Policy
+                </button>
+              </p>
+            </div>
+
+            <button 
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary w-full bg-green-600 text-white hover:bg-green-700 py-3 rounded transition duration-200 flex items-center justify-center"
+            >
+              {loading ? (
+                <MetroSpinner size={20} color="white" loading={true} />
+              ) : (
+                'Login'
+              )}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyCode}>
+            <div className="mb-6">
+              <label className="block text-gray-700 text-sm mb-2">Verification Code</label>
+              <input
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                className="input input-bordered w-full p-3 border border-gray-300 dark:bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                placeholder="Enter 6-digit code"
+                required
+              />
+            </div>
+            <button 
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary w-full bg-green-600 text-white hover:bg-green-700 py-3 rounded transition duration-200 flex items-center justify-center"
+            >
+              {loading ? (
+                <MetroSpinner size={20} color="white" loading={true} />
+              ) : (
+                'Verify Code'
+              )}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

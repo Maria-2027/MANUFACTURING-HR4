@@ -15,6 +15,9 @@ const complaintSchema = new mongoose.Schema({
     ]
   },
   ComplaintDescription: { type: String, required: true },
+  complaintAgainst: { type: String, required: true },
+  complaintAgainstPosition: { type: String, required: true },
+  complaintAgainstDepartment: { type: String, required: true },
   File: { type: String },
   date: { type: Date, default: Date.now },
 });

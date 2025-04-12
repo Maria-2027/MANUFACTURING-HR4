@@ -27,6 +27,8 @@ const AdminLogin = () => {
   const [show2FA, setShow2FA] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60); // 60 seconds = 1 minute
+  const [timerActive, setTimerActive] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +41,21 @@ const AdminLogin = () => {
       setIsLoading(false);
     }, 1000);
   }, []);
+
+  useEffect(() => {
+    let timer;
+    if (timerActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsCodeSent(false);
+      if (show2FA) {
+        toast.info("Verification code has expired. Please request a new one.");
+      }
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, timeLeft, show2FA]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -84,6 +101,8 @@ const AdminLogin = () => {
             });
             setShow2FA(true);
             setIsCodeSent(true);
+            setTimeLeft(60); // Reset timer
+            setTimerActive(true); // Start timer
             toast.info("A verification code has been sent to your email.", {
               position: "top-center",
               autoClose: 5000,
@@ -121,6 +140,12 @@ const AdminLogin = () => {
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
+    
+    if (!isCodeSent || timeLeft === 0) {
+      toast.error("Verification code has expired. Please request a new one.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -153,6 +178,25 @@ const AdminLogin = () => {
         setShow2FA(false); // Return to login form
         setFormData({ email: "", password: "", rememberMe: false });
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      await axios.post(`${TWO_FA_BASE_URL}/send-2fa-code`, {
+        email: formData.email
+      });
+      setTimeLeft(60);
+      setTimerActive(true);
+      setIsCodeSent(true);
+      toast.info("New verification code has been sent to your email.");
+    } catch (error) {
+      toast.error("Failed to send new verification code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -406,7 +450,14 @@ const AdminLogin = () => {
         ) : (
           <form onSubmit={handleVerifyCode}>
             <div className="mb-6">
-              <label className="block text-gray-700 text-sm mb-2">Verification Code</label>
+              <label className="block text-gray-700 text-sm mb-2">
+                Verification Code
+                {timeLeft > 0 && (
+                  <span className="float-right text-green-600">
+                    Time remaining: {timeLeft}s
+                  </span>
+                )}
+              </label>
               <input
                 type="text"
                 value={verificationCode}
@@ -416,17 +467,29 @@ const AdminLogin = () => {
                 required
               />
             </div>
-            <button 
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full bg-green-600 text-white hover:bg-green-700 py-3 rounded transition duration-200 flex items-center justify-center"
-            >
-              {loading ? (
-                <MetroSpinner size={20} color="white" loading={true} />
-              ) : (
-                'Verify Code'
+            <div className="flex flex-col gap-3">
+              <button 
+                type="submit"
+                disabled={loading || !isCodeSent || timeLeft === 0}
+                className="btn btn-primary w-full bg-green-600 text-white hover:bg-green-700 py-3 rounded transition duration-200 flex items-center justify-center"
+              >
+                {loading ? (
+                  <MetroSpinner size={20} color="white" loading={true} />
+                ) : (
+                  'Verify Code'
+                )}
+              </button>
+              {(!isCodeSent || timeLeft === 0) && (
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="btn w-full bg-gray-100 text-gray-700 hover:bg-gray-200 py-3 rounded transition duration-200"
+                >
+                  Resend Verification Code
+                </button>
               )}
-            </button>
+            </div>
           </form>
         )}
       </div>

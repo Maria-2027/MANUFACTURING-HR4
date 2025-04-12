@@ -22,6 +22,10 @@ const suggestionSchema = new mongoose.Schema({
     enum: ['PENDING', 'APPROVED', 'DECLINED'],
     default: 'PENDING'
   },
+  feedback: {
+    type: String,
+    default: ''
+  },
   approvedDate: {
     type: Date
   },

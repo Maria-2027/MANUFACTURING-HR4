@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaUserCircle, FaTimes, FaMedal } from "react-icons/fa";
+import { FaExclamationCircle, FaRegCommentDots, FaEnvelope, FaChartBar, FaSignOutAlt, FaUserCircle, FaTimes, FaMedal, FaRegClipboard } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -56,96 +56,145 @@ const TopEmployee = () => {
   });
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  useEffect(() => {
-    const fetchTopEmployees = async () => {
+  const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
       try {
-        const today = new Date();
-        
-        // For monthly data
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        
-        // For weekly data
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        const weekEnd = new Date(today);
-        weekEnd.setDate(weekStart.getDate() + 6);
-
-        setDateRanges({
-          monthly: { start: monthStart, end: monthEnd },
-          weekly: { start: weekStart, end: weekEnd }
-        });
-
-        const formatDate = (date) => date.toISOString().split('T')[0];
-
-        // Fetch all employee data for the period
-        const monthlyResponse = await fetch(
-          `${TOPEMPLOYEE}?startDate=${formatDate(monthStart)}&endDate=${formatDate(monthEnd)}`
-        );
-        
-        const weeklyResponse = await fetch(
-          `${TOPEMPLOYEE}?startDate=${formatDate(weekStart)}&endDate=${formatDate(weekEnd)}`
-        );
-
-        if (!monthlyResponse.ok || !weeklyResponse.ok) throw new Error('Failed to fetch');
-        
-        const monthlyData = await monthlyResponse.json();
-        const weeklyData = await weeklyResponse.json();
-
-        // Convert single object to array if necessary
-        const monthlyArray = Array.isArray(monthlyData) ? monthlyData : [monthlyData];
-        const weeklyArray = Array.isArray(weeklyData) ? weeklyData : [weeklyData];
-
-        // Calculate scores
-        const calculateScore = (employee) => {
-          const hoursScore = employee?.totalHours || 0;
-          const punctualityScore = 1 - ((employee?.minutes_late || 0) / 60);
-          return (hoursScore * 0.7 + punctualityScore * 0.3).toFixed(2);
-        };
-
-        // Process monthly employee
-        const monthlyTopEmployee = monthlyArray[0] && monthlyArray[0].employee_firstname ? {
-          name: `${monthlyArray[0].employee_firstname} ${monthlyArray[0].employee_lastname}`,
-          department: monthlyArray[0].position,
-          achievement: `Outstanding performance with ${monthlyArray[0].totalHours?.toFixed(1)} hours worked`,
-          aiScore: calculateScore(monthlyArray[0]),
-          tags: ['Top Performer', 'Monthly Star']
-        } : null;
-
-        // Process weekly employee
-        const weeklyTopEmployee = weeklyArray[0] && weeklyArray[0].employee_firstname ? {
-          name: `${weeklyArray[0].employee_firstname} ${weeklyArray[0].employee_lastname}`,
-          department: weeklyArray[0].position,
-          achievement: `Excellence with ${weeklyArray[0].totalHours?.toFixed(1)} hours worked`,
-          aiScore: calculateScore(weeklyArray[0]),
-          tags: ['Weekly Champion', 'Outstanding']
-        } : null;
-
-        setTopEmployees({ monthlyTopEmployee, weeklyTopEmployee });
-
-        // Set runners-up if there are more employees
-        setRunnersUp({
-          second: monthlyArray[1] ? {
-            name: `${monthlyArray[1].employee_firstname} ${monthlyArray[1].employee_lastname}`,
-            department: monthlyArray[1].position,
-            aiScore: calculateScore(monthlyArray[1])
-          } : null,
-          third: monthlyArray[2] ? {
-            name: `${monthlyArray[2].employee_firstname} ${monthlyArray[2].employee_lastname}`,
-            department: monthlyArray[2].position,
-            aiScore: calculateScore(monthlyArray[2])
-          } : null
-        });
-
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response;
       } catch (error) {
-        console.error('Error fetching top employees:', error);
+        if (i === retries - 1) throw error;
+        if (error.code === 'ECONNRESET' || error.name === 'TypeError') {
+          await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+          continue;
+        }
+        throw error;
       }
-    };
+    }
+  };
 
+  const fetchData = async (startDate, endDate) => {
+    try { 
+      const response = await fetchWithRetry(
+        `${TOPEMPLOYEE}?startDate=${startDate}&endDate=${endDate}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+          },
+          timeout: 5000
+        }
+      );
+
+      const data = await response.json();
+      if (data.message === "No top employee found in the selected date range") {
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error(`Failed to fetch data: ${error.message}`);
+      return null;
+    }
+  };
+
+  const fetchTopEmployees = async () => {
+    try {
+      const today = new Date();
+      
+      // For monthly data
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      // For weekly data
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      const weekEnd = new Date(today);
+      weekEnd.setDate(weekStart.getDate() + 6);
+
+      setDateRanges({
+        monthly: { start: monthStart, end: monthEnd },
+        weekly: { start: weekStart, end: weekEnd }
+      });
+
+      const formatDate = (date) => date.toISOString().split('T')[0];
+
+      // Add loading state
+      setTopEmployees({ monthlyTopEmployee: null, weeklyTopEmployee: null });
+      setRunnersUp({ second: null, third: null });
+
+      const monthlyData = await fetchData(
+        formatDate(monthStart),
+        formatDate(monthEnd)
+      );
+
+      const weeklyData = await fetchData(
+        formatDate(weekStart),
+        formatDate(weekEnd)
+      );
+
+      const processEmployeeData = (data) => {
+        if (!data || data.message) return null;
+
+        const [firstName, ...lastNameParts] = data.employee_fullname.split(' ');
+        const lastName = lastNameParts.join(' ');
+
+        return {
+          name: data.employee_fullname,
+          employee_firstname: firstName,
+          employee_lastname: lastName,
+          position: data.position || 'N/A',
+          totalHours: data.totalHours || 0,
+          minutes_late: data.minutes_late || 0
+        };
+      };
+
+      const monthlyEmployee = processEmployeeData(monthlyData);
+      const weeklyEmployee = processEmployeeData(weeklyData);
+
+      const calculateScore = (employee) => {
+        if (!employee) return 0;
+        const hoursScore = employee.totalHours || 0;
+        const punctualityScore = 1 - ((employee.minutes_late || 0) / 60);
+        return (hoursScore * 0.7 + punctualityScore * 0.3).toFixed(2);
+      };
+
+      const monthlyTopEmployee = monthlyEmployee ? {
+        name: monthlyEmployee.name,
+        department: monthlyEmployee.position,
+        achievement: `Outstanding performance with ${monthlyEmployee.totalHours.toFixed(1)} hours worked`,
+        aiScore: calculateScore(monthlyEmployee),
+        tags: ['Top Performer', 'Monthly Star']
+      } : null;
+
+      const weeklyTopEmployee = weeklyEmployee ? {
+        name: weeklyEmployee.name,
+        department: weeklyEmployee.position,
+        achievement: `Excellence with ${weeklyEmployee.totalHours.toFixed(1)} hours worked`,
+        aiScore: calculateScore(weeklyEmployee),
+        tags: ['Weekly Champion', 'Outstanding']
+      } : null;
+
+      setTopEmployees({ monthlyTopEmployee, weeklyTopEmployee });
+
+      setRunnersUp({
+        second: null,
+        third: null
+      });
+
+    } catch (error) {
+      console.error('Error in fetchTopEmployees:', error);
+      setTopEmployees({ monthlyTopEmployee: null, weeklyTopEmployee: null });
+      setRunnersUp({ second: null, third: null });
+    }
+  };
+
+  useEffect(() => {
     fetchTopEmployees();
   }, []);
 
-  // Format date helper
   const formatDate = (date) => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('en-US', {
@@ -190,12 +239,10 @@ const TopEmployee = () => {
     const dates = generateDateRange(start, end);
     
     try {
-      // Format dates for display
       const formattedDates = dates.map(date => 
         date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
       );
 
-      // Fetch actual data for each date
       const dailyData = await Promise.all(dates.map(async (date) => {
         const formattedDate = date.toISOString().split('T')[0];
         const response = await fetch(
@@ -374,7 +421,8 @@ const TopEmployee = () => {
               { title: "Employee Grievances", icon: <FaExclamationCircle className="text-lg" />, link: "/admin-grievance" },
               { title: "Employee Suggestions", icon: <FaRegCommentDots className="text-lg" />, link: "/admin-employee-suggestion" },
               { title: "Communication Hub", icon: <FaEnvelope className="text-lg" />, link: "/admin-communication" },
-              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" }
+              { title: "Workforce Analytics", icon: <FaChartBar className="text-lg" />, link: "/admin-workflow" },
+              { title: "Audit Logs", icon: <FaRegClipboard className="text-lg" />, link: "/admin-audit-logs" }
             ].map((item, index) => (
               <li key={index} className={`p-3 rounded-md transition duration-200 ${activeTab === item.title ? "bg-blue-200 text-blue-600" : buttonHoverClasses}`}>
                 <Link to={item.link} className="flex items-center space-x-3" onClick={() => setActiveTab(item.title)}>
@@ -476,7 +524,9 @@ const TopEmployee = () => {
                 </div>
               </div>
             ) : (
-              <p>Loading weekly top employee data...</p>
+              <div className="text-center py-8">
+                <p className="text-gray-600">No top employee found for this week.</p>
+              </div>
             )}
           </div>
 

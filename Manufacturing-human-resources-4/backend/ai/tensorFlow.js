@@ -33,8 +33,7 @@ export async function predictTopEmployee(employeesData, startDate, endDate) {
     if (!employeeMap.has(e.employee_id)) {
       employeeMap.set(e.employee_id, {
         employee_id: e.employee_id,
-        employee_firstname: e.employee_firstname,
-        employee_lastname: e.employee_lastname,
+        employee_fullname: e.employee_fullname,
         position: e.position,
         totalHours: 0,
         minutes_late: 0,

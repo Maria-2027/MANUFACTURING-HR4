@@ -17,6 +17,8 @@ const AdminWorkflow = () => {
   const [error, setError] = useState(null);      // Add error state
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5; // Changed from 8 to 5
+  const [showModal, setShowModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -124,13 +126,41 @@ const AdminWorkflow = () => {
   };
 
   const handleTopEmployee = () => {
-    setActiveButton("Top Employee");
-    navigate('/admin-top-employee');  // Make sure this route exists
+    try {
+      setActiveButton("Top Employee");
+      navigate('/admin-top-employee', { replace: true });
+    } catch (error) {
+      console.error("Navigation error:", error);
+    }
   };
 
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
+  };
+
+  const calculateMetrics = (employee) => {
+    // Convert values to numbers and provide defaults if undefined
+    const totalHours = parseFloat(employee.total_hours) || 0;
+    const overtimeHours = parseFloat(employee.overtime_hours) || 0;
+    const minutesLate = parseFloat(employee.minutes_late) || 0;
+
+    // Calculate with validated numbers
+    const attendanceScore = Math.min(((totalHours / 8) * 100), 100);
+    const punctualityScore = Math.max(100 - (minutesLate * 2), 0);
+    const engagementScore = Math.min(((overtimeHours + 8) / 10) * 100, 100);
+
+    return {
+      attendance: attendanceScore.toFixed(1),
+      punctuality: punctualityScore.toFixed(1),
+      grievances: 0,
+      engagement: engagementScore.toFixed(1)
+    };
+  };
+
+  const handleRowClick = (employee) => {
+    setSelectedEmployee(employee);
+    setShowModal(true);
   };
 
   return (
@@ -211,8 +241,7 @@ const AdminWorkflow = () => {
                             <thead>
                               <tr className="border-b">
                                 <th className="px-4 py-2 text-left">Employee ID</th>
-                                <th className="px-4 py-2 text-left">First Name</th>
-                                <th className="px-4 py-2 text-left">Last Name</th>
+                                <th className="px-4 py-2 text-left">Full Name</th>
                                 <th className="px-4 py-2 text-left">Total Hours</th>
                                 <th className="px-4 py-2 text-left">Overtime Hours</th>
                                 <th className="px-4 py-2 text-left">Status</th>
@@ -221,8 +250,20 @@ const AdminWorkflow = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {currentRows.map((employee, index) => (
-                                <tr key={employee.id || `employee-${index}`} className="border-b"><td className="px-4 py-2">{employee.employee_id}</td><td className="px-4 py-2">{employee.employee_firstname}</td><td className="px-4 py-2">{employee.employee_lastname}</td><td className="px-4 py-2">{employee.total_hours}</td><td className="px-4 py-2">{employee.overtime_hours}</td><td className="px-4 py-2">{employee.status}</td><td className="px-4 py-2">{employee.approved_at}</td><td className="px-4 py-2">{employee.minutes_late}</td></tr>
+                            {currentRows.map((employee, index) => (
+                                <tr 
+                                  key={employee.id || `employee-${index}`} 
+                                  className="border-b hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => handleRowClick(employee)}
+                                >
+                                <td className="px-4 py-2">{employee.employee_id}</td>
+                                <td className="px-4 py-2">{employee.employee_fullname}</td>
+                                <td className="px-4 py-2">{employee.total_hours}</td>
+                                <td className="px-4 py-2">{employee.overtime_hours}</td>
+                                <td className="px-4 py-2">{employee.status}</td>
+                                <td className="px-4 py-2">{employee.approved_at}</td>
+                                <td className="px-4 py-2">{employee.minutes_late}</td>
+                              </tr>
                               ))}
                             </tbody>
                           </table>
@@ -255,6 +296,53 @@ const AdminWorkflow = () => {
             )}
           </div>
         </div>
+
+        {showModal && selectedEmployee && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">Employee Metrics</h3>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <h4 className="text-xl mb-4">
+                Employee: {selectedEmployee.employee_fullname}
+              </h4>
+              
+              <div className="space-y-4">
+                <h5 className="text-lg font-semibold">📊 Score Breakdown:</h5>
+                {(() => {
+                  const metrics = calculateMetrics(selectedEmployee);
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span>Attendance:</span>
+                        <span className="font-semibold">{metrics.attendance}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Punctuality:</span>
+                        <span className="font-semibold">{metrics.punctuality}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Grievances:</span>
+                        <span className="font-semibold">{metrics.grievances}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Engagement Score:</span>
+                        <span className="font-semibold">{metrics.engagement}%</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

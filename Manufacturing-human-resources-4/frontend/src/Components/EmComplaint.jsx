@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import layout from "./Assets/layout.jpg";
 
 const EMCOMPLAINT = process.env.NODE_ENV === "development"
   ? "http://localhost:7688/api/auth/EmComplaint"
@@ -21,7 +24,7 @@ const api = axios.create({
   }
 });
 
-const EmComplaint = () => {  // Removed user prop
+const EmComplaint = () => {
   const navigate = useNavigate();
   
   const [firstName, setFirstName] = useState(() => {
@@ -33,13 +36,17 @@ const EmComplaint = () => {  // Removed user prop
     return storedData ? JSON.parse(storedData).lastName : "";
   });
   const [complaint, setComplaint] = useState("");
-  const [complaintType, setComplaintType] = useState(""); // Add this line
-  const [attachment, setAttachment] = useState(null);
+  const [complaintType, setComplaintType] = useState("");
+  const [complaintAgainst, setComplaintAgainst] = useState("");
+  const [complaintAgainstPosition, setComplaintAgainstPosition] = useState("");
+  const [complaintAgainstDepartment, setComplaintAgainstDepartment] = useState("");
   const [notification, setNotification] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -62,59 +69,136 @@ const EmComplaint = () => {  // Removed user prop
 
   useEffect(() => {
     fetchProfile();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check file type
-      if (file.type !== 'application/pdf') {
-        alert('Only PDF files are allowed');
-        e.target.value = '';
-        setAttachment(null);
-        return;
-      }
-      // Check file size (limit to 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
-        e.target.value = '';
-        setAttachment(null);
-        return;
-      }
-      setAttachment(file);
+  const generateComplaintPDF = async () => {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'letter'
+    });
+
+    try {
+      const img = new Image();
+      img.src = layout;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const logoData = canvas.toDataURL('image/jpeg');
+
+      pdf.addImage(logoData, 'JPEG', 85, 15, 40, 40);
+
+      pdf.setFontSize(20);
+      pdf.setTextColor(0, 48, 87);
+      pdf.text('JJM Manufacturing', 105, 65, { align: 'center' });
+      
+      pdf.setFontSize(16);
+      pdf.text('EMPLOYEE COMPLAINT FORM', 105, 75, { align: 'center' });
+      
+      pdf.setFontSize(10);
+      pdf.setDrawColor(0, 48, 87);
+      pdf.setLineWidth(0.5);
+      pdf.line(20, 90, 190, 90);
+
+      let yPos = 100;
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 48, 87);
+      pdf.text('COMPLAINANT INFORMATION', 20, yPos);
+      
+      yPos += 10;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.text(`Name: ${firstName} ${lastName}`, 20, yPos);
+      pdf.text(`Date Filed: ${new Date().toLocaleDateString()}`, 120, yPos);
+
+      yPos += 15;
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 48, 87);
+      pdf.text('PERSON BEING COMPLAINED ABOUT', 20, yPos);
+      
+      yPos += 10;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.text(`Name: ${complaintAgainst}`, 20, yPos);
+      pdf.text(`Position: ${complaintAgainstPosition}`, 120, yPos);
+      yPos += 8;
+      pdf.text(`Department: ${complaintAgainstDepartment}`, 20, yPos);
+
+      yPos += 15;
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 48, 87);
+      pdf.text('COMPLAINT DETAILS', 20, yPos);
+      
+      yPos += 10;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(10);
+      pdf.text(`Type of Complaint: ${complaintType}`, 20, yPos);
+
+      yPos += 10;
+      pdf.text('Description:', 20, yPos);
+      yPos += 5;
+      const complaintLines = pdf.splitTextToSize(complaint, 150);
+      complaintLines.forEach(line => {
+        pdf.text(line, 20, yPos);
+        yPos += 5;
+      });
+
+      yPos = Math.max(yPos + 30, 220);
+      pdf.line(20, yPos, 80, yPos);
+      pdf.line(120, yPos, 180, yPos);
+      pdf.text("Complainant's Signature", 20, yPos + 5);
+      pdf.text("Received by (HR)", 120, yPos + 5);
+      pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, yPos + 10);
+      pdf.text(`Date: _________________`, 120, yPos + 10);
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text('CONFIDENTIAL - For Internal Use Only', 105, 270, { align: 'center' });
+
+      return pdf;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
     }
   };
 
-  const uploadFileToCloudinary = async (file) => {
+  const uploadFileToCloudinary = async (pdfFile) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", pdfFile);
     formData.append("upload_preset", "Hr4_BudgetRequest");
-    formData.append("resource_type", "raw"); // 🔥 Dinagdag ito para matanggap kahit anong file
-  
+    formData.append("resource_type", "raw");
+
     try {
       const response = await axios.post(
         "https://api.cloudinary.com/v1_1/dhawghlsr/raw/upload",
         formData
       );
-  
-      console.log("Cloudinary response:", response.data);
-  
-      if (!response.data || !response.data.secure_url) {
-        throw new Error("Invalid response from Cloudinary");
-      }
-  
       return response.data.secure_url;
     } catch (error) {
-      console.error("Cloudinary upload error:", error.response?.data || error);
-      throw new Error(
-        error.response?.data?.error?.message ||
-        "Failed to upload file. Please try again."
-      );
+      console.error("Error uploading to Cloudinary:", error);
+      throw error;
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    generateComplaintPDF().then(pdf => {
+      const pdfData = pdf.output('datauristring');
+      setPdfPreview(pdfData);
+      setShowPdfPreview(true);
+    });
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowPdfPreview(false);
     setShowConfirmDialog(true);
   };
 
@@ -124,69 +208,59 @@ const EmComplaint = () => {  // Removed user prop
     setShowSuccess(false);
     setIsLoading(true);
 
-    if (!attachment) {
-      setIsError(true);
-      setNotification("Please attach a PDF file before submitting.");
-      setIsLoading(false);
-      setTimeout(() => {
-        setNotification("");
-        setIsError(false);
-      }, 3000);
-      return;
-    }
-
     try {
-      let attachmentUrl = null;
-      if (attachment) {
-        attachmentUrl = await uploadFileToCloudinary(attachment);
-      }
-
-      const formData = {
-        firstName: firstName,
-        lastName: lastName,
-        ComplaintType: complaintType,
-        ComplaintDescription: complaint,
-        File: attachmentUrl,
-        date: new Date().toISOString()
-      };
-
-      const response = await axios.post(
-        EMCOMPLAINT,
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
+      const pdf = await generateComplaintPDF();
+      const pdfFile = new File(
+        [pdf.output('blob')], 
+        `complaint_${firstName}_${lastName}.pdf`, 
+        { type: 'application/pdf' }
       );
+      
+      // Upload PDF to Cloudinary
+      const cloudinaryUrl = await uploadFileToCloudinary(pdfFile);
+      
+      // Create form data for backend
+      const formData = new FormData();
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('ComplaintType', complaintType);
+      formData.append('ComplaintDescription', complaint);
+      formData.append('complaintAgainst', complaintAgainst);
+      formData.append('complaintAgainstPosition', complaintAgainstPosition);
+      formData.append('complaintAgainstDepartment', complaintAgainstDepartment);
+      formData.append('date', new Date().toISOString());
+      formData.append('File', cloudinaryUrl);
+
+      // Send to backend
+      const response = await axios.post(EMCOMPLAINT, formData, {
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}`
+        }
+      });
 
       if (response.data) {
+        // Trigger PDF download
+        pdf.save(`complaint_${firstName}_${lastName}.pdf`);
+
         setShowSuccess(true);
-        setNotification("");
-        setIsError(false);
+        // Clear form
         setComplaint("");
-        setAttachment(null);
+        setComplaintType("");
+        setComplaintAgainst("");
+        setComplaintAgainstPosition("");
+        setComplaintAgainstDepartment("");
         
         setTimeout(() => {
           setShowSuccess(false);
         }, 3000);
-      } else {
-        throw new Error("No response data received");
       }
     } catch (error) {
       console.error("Error submitting complaint:", error);
       setIsError(true);
-      setShowSuccess(false);
       setNotification(
         error.response?.data?.message || 
-        error.message || 
-        "Failed to submit complaint. Please try again."
+        "Failed to submit complaint. Please check your network connection and try again."
       );
-
-      setTimeout(() => {
-        setNotification("");
-        setIsError(false);
-      }, 3000);
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +268,50 @@ const EmComplaint = () => {  // Removed user prop
 
   return (
     <>
-      {/* Confirmation Dialog */}
+      {/* PDF Preview Modal */}
+      <AnimatePresence>
+        {showPdfPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="bg-white p-6 rounded-xl shadow-xl w-[90vw] h-[90vh] flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Preview Complaint Form</h3>
+                <div className="space-x-2">
+                  <button
+                    onClick={handleConfirmSubmit}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Submit
+                  </button>
+                  <button
+                    onClick={() => setShowPdfPreview(false)}
+                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 w-full bg-gray-100 rounded">
+                <iframe
+                  src={pdfPreview}
+                  className="w-full h-full border-0 rounded"
+                  title="Complaint Form Preview"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showConfirmDialog && (
           <motion.div
@@ -231,7 +348,6 @@ const EmComplaint = () => {  // Removed user prop
         )}
       </AnimatePresence>
 
-      {/* Success Modal */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
@@ -320,7 +436,6 @@ const EmComplaint = () => {  // Removed user prop
               Employee Complaint
             </motion.h1>
 
-            {/* Error Notification */}
             <AnimatePresence>
               {isError && notification && (
                 <motion.div
@@ -341,7 +456,6 @@ const EmComplaint = () => {  // Removed user prop
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              {/* Form fields with staggered animations */}
               <motion.div
                 initial={{ x: -30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -411,22 +525,36 @@ const EmComplaint = () => {  // Removed user prop
                 transition={{ delay: 0.8 }}
                 className="transform transition-all duration-300 hover:scale-[1.02]"
               >
-                <label className="block text-base font-medium text-gray-700 mb-1">
-                  Attachment (Required) <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-base font-medium text-gray-700 mb-1">Person Being Complained About</label>
                 <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="w-full border-2 border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 shadow-sm hover:border-blue-400 transition-colors"
-                  accept=".pdf"
+                  type="text"
+                  value={complaintAgainst}
+                  onChange={(e) => setComplaintAgainst(e.target.value)}
+                  placeholder="Full Name"
+                  className="w-full p-3 border-2 border-gray-300 rounded-lg"
                   required
                 />
-                <small className="text-sm text-gray-500">PDF only. Max: 10MB</small>
+                <input
+                  type="text"
+                  value={complaintAgainstPosition}
+                  onChange={(e) => setComplaintAgainstPosition(e.target.value)}
+                  placeholder="Position"
+                  className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                  required
+                />
+                <input
+                  type="text"
+                  value={complaintAgainstDepartment}
+                  onChange={(e) => setComplaintAgainstDepartment(e.target.value)}
+                  placeholder="Department"
+                  className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                  required
+                />
               </motion.div>
 
               <motion.button
                 type="submit"
-                disabled={!attachment || isLoading}
+                disabled={isLoading}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 initial={{ y: 20, opacity: 0 }}

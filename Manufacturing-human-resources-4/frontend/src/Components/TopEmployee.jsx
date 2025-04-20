@@ -147,7 +147,11 @@ const TopEmployee = () => {
           employee_lastname: lastName,
           position: data.position || 'N/A',
           totalHours: data.totalHours || 0,
-          minutes_late: data.minutes_late || 0
+          minutes_late: data.minutes_late || 0,
+          taskCompletionRate: data.taskCompletionRate || 0.8,
+          specialProjects: data.specialProjects || 0.7,
+          collaborationScore: data.collaborationScore || 0.85,
+          peerFeedback: data.peerFeedback || 0.9
         };
       };
 
@@ -156,16 +160,54 @@ const TopEmployee = () => {
 
       const calculateScore = (employee) => {
         if (!employee) return 0;
-        const hoursScore = employee.totalHours || 0;
+        
+        // Weighted scoring system
+        const weights = {
+          attendance: 0.2,      // 20% - Attendance & punctuality
+          performance: 0.3,     // 30% - Task completion & quality
+          initiative: 0.2,      // 20% - Special projects & innovation
+          teamwork: 0.15,       // 15% - Collaboration & helping others
+          feedback: 0.15        // 15% - Customer/peer feedback
+        };
+
+        // Calculate individual scores
+        const attendanceScore = (employee.totalHours || 0) / 160; // Assuming 160 hours is perfect
         const punctualityScore = 1 - ((employee.minutes_late || 0) / 60);
-        return (hoursScore * 0.7 + punctualityScore * 0.3).toFixed(2);
+        const attendanceFinal = (attendanceScore + punctualityScore) / 2;
+
+        const performanceScore = employee.taskCompletionRate || 0.8;
+        const initiativeScore = employee.specialProjects || 0.7;
+        const teamworkScore = employee.collaborationScore || 0.85;
+        const feedbackScore = employee.peerFeedback || 0.9;
+
+        // Calculate final weighted score
+        const finalScore = (
+          (attendanceFinal * weights.attendance) +
+          (performanceScore * weights.performance) +
+          (initiativeScore * weights.initiative) +
+          (teamworkScore * weights.teamwork) +
+          (feedbackScore * weights.feedback)
+        ) * 100; // Convert to percentage
+
+        return finalScore.toFixed(2);
       };
 
       const monthlyTopEmployee = monthlyEmployee ? {
         name: monthlyEmployee.name,
         department: monthlyEmployee.position,
-        achievement: `Outstanding performance with ${monthlyEmployee.totalHours.toFixed(1)} hours worked`,
+        achievement: `Outstanding performance with:
+          • ${monthlyEmployee.totalHours.toFixed(1)} hours worked
+          • ${monthlyEmployee.taskCompletionRate * 100}% task completion
+          • ${monthlyEmployee.specialProjects ? 'Led special projects' : ''}
+          • ${monthlyEmployee.collaborationScore * 100}% team collaboration
+          • Excellent peer feedback`,
         aiScore: calculateScore(monthlyEmployee),
+        performanceMetrics: {
+          taskCompletion: monthlyEmployee.taskCompletionRate || 0,
+          initiative: monthlyEmployee.specialProjects || 0,
+          teamwork: monthlyEmployee.collaborationScore || 0,
+          feedback: monthlyEmployee.peerFeedback || 0
+        },
         tags: ['Top Performer', 'Monthly Star']
       } : null;
 
@@ -394,6 +436,48 @@ const TopEmployee = () => {
               <div className="bg-white p-4 rounded-lg shadow">
                 <h4 className="text-sm font-medium text-gray-500 mb-1">Performance Rating</h4>
                 <p className="text-2xl font-bold text-green-600">{employee.aiScore}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-6 mb-6">
+            <h4 className="text-lg font-semibold mb-4">Performance Highlights</h4>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h5 className="text-sm font-medium text-gray-500 mb-2">Task Completion</h5>
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-indigo-600">
+                    {(employee.performanceMetrics?.taskCompletion * 100).toFixed(0)}%
+                  </p>
+                  <span className="text-sm text-gray-500">Tasks completed on time</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h5 className="text-sm font-medium text-gray-500 mb-2">Initiative</h5>
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-green-600">
+                    {(employee.performanceMetrics?.initiative * 100).toFixed(0)}%
+                  </p>
+                  <span className="text-sm text-gray-500">Special projects</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h5 className="text-sm font-medium text-gray-500 mb-2">Team Collaboration</h5>
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-blue-600">
+                    {(employee.performanceMetrics?.teamwork * 100).toFixed(0)}%
+                  </p>
+                  <span className="text-sm text-gray-500">Teamwork rating</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h5 className="text-sm font-medium text-gray-500 mb-2">Peer Feedback</h5>
+                <div className="flex items-center justify-between">
+                  <p className="text-xl font-bold text-purple-600">
+                    {(employee.performanceMetrics?.feedback * 100).toFixed(0)}%
+                  </p>
+                  <span className="text-sm text-gray-500">Positive feedback</span>
+                </div>
               </div>
             </div>
           </div>

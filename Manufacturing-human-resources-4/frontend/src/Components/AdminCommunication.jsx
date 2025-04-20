@@ -356,7 +356,7 @@ const AdminCommunication = () => {
             <div>
               <h3 className="font-bold text-lg text-gray-900">{announcement.title}</h3>
               <div className="text-sm text-gray-500">
-                Posted {timeAgo(announcement.date)}
+                Posted by <span className="font-medium">{announcement.postedBy || 'Admin'}</span> • {timeAgo(announcement.date)}
               </div>
             </div>
           </div>
@@ -641,7 +641,9 @@ const AdminCommunication = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">{selectedAnnouncement.title}</h3>
-                    <p className="text-sm text-gray-500">Posted {timeAgo(selectedAnnouncement.date)}</p>
+                    <p className="text-sm text-gray-500">
+                      Posted by <span className="font-medium">{selectedAnnouncement.postedBy || 'Admin'}</span> • {timeAgo(selectedAnnouncement.date)}
+                    </p>
                   </div>
                 </div>
                 <button onClick={handleCloseModal} 

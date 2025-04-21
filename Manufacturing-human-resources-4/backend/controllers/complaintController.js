@@ -29,3 +29,47 @@ export const submitComplaint = async (req, res) => {
     res.status(500).json({ error: "Server error, could not submit complaint.", details: error.message });
   }
 };
+
+export const updateComplaintStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const validStatuses = ['Pending', 'In-Review', 'Resolved', 'Escalated'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value'
+      });
+    }
+
+    const updatedComplaint = await ComplaintUser.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true }
+    );
+
+    if (!updatedComplaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found'
+      });
+    }
+
+    console.log("✅ Complaint status updated:", updatedComplaint);
+    res.json({
+      success: true,
+      message: 'Complaint status updated successfully',
+      complaint: updatedComplaint
+    });
+
+  } catch (error) {
+    console.error("❌ Error updating complaint status:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating complaint status',
+      error: error.message
+    });
+  }
+};

@@ -20,6 +20,12 @@ const complaintSchema = new mongoose.Schema({
   complaintAgainstDepartment: { type: String, required: true },
   File: { type: String },
   date: { type: Date, default: Date.now },
+  status: {
+    type: String,
+    required: true,
+    enum: ['Pending', 'In-Review', 'Resolved', 'Escalated'],
+    default: 'Pending'
+  }
 });
 
 const ComplaintUser = mongoose.model('Complaint', complaintSchema);

@@ -17,8 +17,8 @@ const actionReportSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in-review', 'resolved', 'escalated'],
-        default: 'pending'
+        enum: ['Pending', 'In-Review', 'Resolved', 'Escalated'],
+        default: 'Pending'
     },
     assignedTo: {
         type: String,
@@ -56,7 +56,8 @@ const actionReportSchema = new mongoose.Schema({
         default: false
     },
     reportFile: {
-        type: String
+        type: String,
+        required: true,
     },
     createdAt: {
         type: Date,

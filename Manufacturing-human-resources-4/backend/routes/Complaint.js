@@ -1,5 +1,5 @@
 import express from 'express'; 
-import { submitComplaint } from '../controllers/complaintController.js';
+import { submitComplaint, updateComplaintStatus } from '../controllers/complaintController.js';
 import verifyToken from '../middleware/messageMiddleware.js';
 import multer from "multer";
 
@@ -18,6 +18,7 @@ const upload = multer({
 
 // POST: Create a new complaint
 router.post('/api/EmComplaint', upload.single('File'), verifyToken, submitComplaint);
+router.put('/status/:id', updateComplaintStatus);
 
 // GET: Get all complaints
 router.get('/EmComplaint', upload.single('File'), verifyToken, async (req, res) => {
@@ -28,5 +29,6 @@ router.get('/EmComplaint', upload.single('File'), verifyToken, async (req, res) 
     res.status(500).json({ error: 'Error fetching complaints' });
   }
 });
+
 
 export default router;
